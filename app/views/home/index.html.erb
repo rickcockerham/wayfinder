@@ -1,0 +1,142 @@
+<p><%= link_to "New Item", new_item_path %></p>
+<p><%= link_to "Inventory", inventory_items_path %></p>
+
+
+<%= form_with url: root_path, method: :get, local: true do %>
+  <fieldset style="margin-bottom:1rem; display:grid; gap:.5rem;">
+    <legend><strong>Filter</strong></legend>
+
+    <!-- Moods: checkboxes -->
+    <div>
+      <strong>Mood:</strong><br>
+      <% @moods.each do |m| %>
+        <% checked = @selected_mood_ids.include?(m.id) %>
+        <label style="margin-right:1rem;">
+          <input type="checkbox" name="mood_ids[]" value="<%= m.id %>" <%= "checked" if checked %> />
+          <%= m.name %>
+        </label>
+      <% end %>
+    </div>
+
+    <!-- Category: select -->
+    <div>
+      <strong>Category:</strong><br>
+      <select name="category_id">
+        <option value="">All</option>
+        <% @categories.each do |c| %>
+          <option value="<%= c.id %>" <%= "selected" if c.id == @selected_category_id %>><%= c.name %></option>
+        <% end %>
+      </select>
+    </div>
+
+    <!-- Time: slider -->
+    <div>
+      <strong>Time commitment:</strong>
+      <span id="minutes_label"><%= @minutes == HomeController::MAX_MINUTES ? "Any" : "#{@minutes} min" %></span><br>
+      <input type="range"
+             name="minutes"
+             min="0" max="<%= HomeController::MAX_MINUTES %>" step="15"
+             value="<%= @minutes %>"
+             oninput="document.getElementById('minutes_label').textContent = (this.value == this.max ? 'Any' : (this.value + ' min'));">
+    </div>
+
+    <!-- Sort + per -->
+    <div>
+      <strong>Sort:</strong>
+      <select name="sort">
+        <option value="importance" <%= "selected" if @sort=="importance" %>>by importance</option>
+        <option value="time"       <%= "selected" if @sort=="time" %>>by time</option>
+      </select>
+
+      <strong style="margin-left:1rem;">Show:</strong>
+      <select name="per">
+        <% HomeController::PER_OPTIONS.uniq.each do |n| %>
+          <option value="<%= n %>" <%= "selected" if n==@per %>><%= n %></option>
+        <% end %>
+      </select>
+    </div>
+
+    <div><button type="submit">Update list</button></div>
+  </fieldset>
+<% end %>
+
+<!-- Top items list -->
+<a href="/items"><h2>Top <%= @per %> items</h2></a>
+<div class="table-wrap"><!-- keeps desktop from overflowing if lots of columns -->
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th>Title</th><th>Category</th><th class="hide-sm">Mood</th><th class="hide-sm">Time</th>
+        <th class="hide-sm">Impacts P/E/F</th><th>Deadline</th><th class="hide-sm">Missing</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% inv = InventoryItem.all.index_by { |i| i.name.downcase } %>
+      <% @top_items.each do |it| %>
+      <% missing = @missing_by_item[it.id] || [] %>
+      <tr id="<%= dom_id(it) %>">
+        <td data-label="Title"><%= link_to it.title, it %></td>
+        <td data-label="Category"><%= it.category&.name %></td>
+        <td data-label="Mood" class="hide-sm"><%= it.mood&.name %></td>
+        <td data-label="Time" class="hide-sm"><%= it.time_estimate_minutes %>m</td>
+        <td data-label="Impacts" class="hide-sm"><%= [it.personal_impact, it.emotional_impact, it.family_impact].join("/") %></td>
+        <td data-label="Deadline"><%= it.deadline %></td>
+        <td data-label="Missing">
+          <% if missing.empty? %>
+          ✅ ready
+          <% else %>
+          <%= missing.map { |m| "#{m[:name]}(#{m[:short]} #{m[:unit]})" }.join(", ") %>
+          <% end %>
+        </td>
+      </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Shopping list by vendor -->
+<a href="/shopping"><h2 style="margin-top:2rem;">Shopping list</h2></a>
+
+<% if @shops.any? %>
+  <%= form_with url: root_path, method: :get, local: true do %>
+    <!-- preserve current filters while switching vendor -->
+    <% (@selected_mood_ids || []).each do |mid| %>
+      <input type="hidden" name="mood_ids[]" value="<%= mid %>">
+    <% end %>
+    <input type="hidden" name="category_id" value="<%= @selected_category_id %>">
+    <input type="hidden" name="minutes" value="<%= @minutes %>">
+    <input type="hidden" name="sort" value="<%= @sort %>">
+    <input type="hidden" name="per" value="<%= @per %>">
+
+    <label>Vendor:
+      <select name="shop_id">
+        <% @shops.each do |s| %>
+          <option value="<%= s.id %>" <%= "selected" if s.id == @selected_shop_id %>><%= s.name %></option>
+        <% end %>
+      </select>
+    </label>
+    <button type="submit">Update</button>
+  <% end %>
+
+  <% if @shopping_list.present? %>
+    <table border="1" cellpadding="6" style="margin-top:1rem;">
+      <tr><th>Material</th><th>Short</th><th>Unit</th></tr>
+      <% @shopping_list.each do |row| %>
+        <tr>
+          <td><%= row[:name] %></td>
+          <td><%= row[:short] %></td>
+          <td><%= row[:unit] %></td>
+        </tr>
+      <% end %>
+    </table>
+  <% else %>
+    <p style="margin-top:1rem;">Nothing needed from this vendor for the current top items.</p>
+  <% end %>
+<% else %>
+  <p>Add some Shops to see a shopping list.</p>
+<% end %>
+
+<%= link_to "Moods", moods_path %>
+<%= link_to "Locations", locations_path %>
+<%= link_to "Shops", shops_path %>
+<%= link_to "Categories", categories_path %>

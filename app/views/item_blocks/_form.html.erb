@@ -1,0 +1,13 @@
+<!-- app/views/item_blocks/_form.html.erb -->
+<%= form_with(model: item_block) do |f| %>
+  <% if item_block.errors.any? %>
+    <div style="color:red"><%= item_block.errors.full_messages.to_sentence %></div>
+  <% end %>
+  <p>Blocker<br>
+    <%= f.collection_select :blocker_id, Item.order(:title), :id, :title, include_blank: false %>
+  </p>
+  <p>Blocked<br>
+    <%= f.collection_select :blocked_id, Item.order(:title), :id, :title, include_blank: false %>
+  </p>
+  <p><%= f.submit %></p>
+<% end %>

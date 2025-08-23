@@ -1,0 +1,60 @@
+<!-- app/views/items/show.html.erb -->
+<p><%= link_to "Back", root_path %> | <%= link_to "Materials", materials_item_path(@item) %> |
+<%= link_to "Edit", edit_item_path(@item) %></p>
+<h1><%= @item.title %></h1>
+<p><strong>Category:</strong> <%= @item.category&.name %></p>
+<p><strong>Mood:</strong> <%= @item.mood&.name %></p>
+<p><strong>Parent:</strong> <%= @item.parent&.title %></p>
+<p><strong>Impacts:</strong> P=<%= @item.personal_impact %>, E=<%= @item.emotional_impact %>, F=<%= @item.family_impact %></p>
+<p><strong>Time (min):</strong> <%= @item.time_estimate_minutes %></p>
+<p><strong>Cost (cents):</strong> <%= @item.cost_cents %></p>
+<p><strong>Deadline:</strong> <%= @item.deadline %></p>
+
+<%= form_with(model: @item) do |f| %>
+<p><strong>Done:</strong> <%= f.check_box :done %></p>
+<p><strong>Notes:</strong><br><%= f.text_area :notes, rows: 20, class:"notes" %></p>
+<p><%= f.submit %></p>
+<% end %>
+
+<hr>
+<h3>Material Requirements</h3>
+<p><%= link_to "Add Material", materials_item_path(@item) %></p>
+<%= render "materialist", item: @item %>
+
+<!-- app/views/items/show.html.erb -->
+<hr>
+<h3>Reserved inventory</h3>
+<ul>
+  <% @item.item_inventories.includes(:inventory_item).each do |ii| %>
+    <li>
+      <%= ii.inventory_item.name %> — <%= ii.qty_reserved %> <%= ii.unit %>
+      <% if ii.inventory_item.location %> @ <%= ii.inventory_item.location.name %><% end %>
+    </li>
+  <% end %>
+</ul>
+
+<hr>
+<h3>Blocks</h3>
+<p>
+  <%= link_to "Add Blocker → This", new_item_block_path(blocked_id: @item.id) %> |
+  <%= link_to "This → Blocks", new_item_block_path(blocker_id: @item.id) %>
+</p>
+<div style="display:flex; gap:2rem; flex-wrap:wrap">
+  <div>
+    <h4>Blocked by</h4>
+    <ul>
+      <% @blocking_edges.each do |b| %>
+        <li><%= link_to b.blocker.title, b.blocker %> (<%= link_to "edge", b %>)</li>
+      <% end %>
+    </ul>
+  </div>
+  <div>
+    <h4>Blocks</h4>
+    <ul>
+      <% @blocks_out.each do |b| %>
+        <li><%= link_to b.blocked.title, b.blocked %> (<%= link_to "edge", b %>)</li>
+      <% end %>
+    </ul>
+  </div>
+</div>
+<%= link_to "Destroy", @item, method: :delete %>

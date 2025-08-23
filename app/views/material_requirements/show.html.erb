@@ -1,0 +1,6 @@
+<!-- app/views/material_requirements/show.html.erb -->
+<p><%= link_to "Back", material_requirements_path %> | <%= link_to "Edit", edit_material_requirement_path(@material_requirement) %></p>
+<h1><%= @material_requirement.name %></h1>
+<p><strong>Item:</strong> <%= link_to @material_requirement.item.title, @material_requirement.item %></p>
+<p><strong>Quantity:</strong> <%= @material_requirement.qty_needed %> <%= @material_requirement.unit %></p>
+<p><strong>Shop:</strong> <%= @material_requirement.shop&.name %></p>

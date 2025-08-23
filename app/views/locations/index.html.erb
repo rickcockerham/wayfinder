@@ -1,0 +1,15 @@
+<h1><%= controller_name.titleize %></h1>
+<p><%= link_to 'Back', root_path %></p>
+<p><%= link_to "New #{controller_name.singularize.titleize}", url_for(action: :new) %></p>
+<table border="1" cellpadding="6">
+  <tr><th>Name</th><th></th></tr>
+  <% instance_variable_get("@#{controller_name}").each do |rec| %>
+    <tr>
+      <td><%= link_to rec.name, rec %></td>
+      <td>
+        <%= link_to "Edit", url_for([:edit, rec]) %> |
+        <%= link_to "Destroy", rec, data: { turbo_method: :delete, turbo_confirm: "Delete?" } %>
+      </td>
+    </tr>
+  <% end %>
+</table>

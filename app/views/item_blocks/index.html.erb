@@ -1,0 +1,18 @@
+<!-- app/views/item_blocks/index.html.erb -->
+<h1>Item Blocks</h1>
+<p><%= link_to "New Block Edge", new_item_block_path %></p>
+<table border="1" cellpadding="6">
+  <tr><th>Blocker</th><th>→</th><th>Blocked</th><th></th></tr>
+  <% @item_blocks.each do |ib| %>
+    <tr>
+      <td><%= link_to ib.blocker.title, ib.blocker %></td>
+      <td>→</td>
+      <td><%= link_to ib.blocked.title, ib.blocked %></td>
+      <td>
+        <%= link_to "Show", ib %> |
+        <%= link_to "Edit", edit_item_block_path(ib) %> |
+        <%= link_to "Destroy", ib, data: { turbo_method: :delete, turbo_confirm: "Delete?" } %>
+      </td>
+    </tr>
+  <% end %>
+</table>

@@ -1,0 +1,27 @@
+<%# expects: locals: { item: } %>
+<% reqs = item.material_requirements.includes(:shop).order(:name) %>
+
+<table class="materials" border="1" cellpadding="6" style="width:100%">
+  <tr>
+    <th>Name</th><th>Qty</th><th>Shop</th><th></th>
+  </tr>
+
+  <% reqs.each do |mr| %>
+    <tr id="<%= dom_id(mr) %>">
+      <td><%= mr.name %></td>
+      <td><%= mr.qty_needed %></td>
+      <td><%= mr.shop&.name %></td>
+      <td>
+        <%= link_to "Remove",
+          material_requirement_path(mr),
+            data: { turbo_method: :delete } %> <% #, turbo_confirm: "Remove this material?"
+                                                  %>
+        <%= link_to "Edit", edit_material_requirement_path(mr) %>
+      </td>
+    </tr>
+  <% end %>
+</table>
+
+<% if reqs.blank? %>
+  <p id="<%= dom_id(item, :materials_empty) %>">No materials yet.</p>
+<% end %>

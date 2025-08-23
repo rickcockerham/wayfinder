@@ -1,0 +1,54 @@
+<!-- app/views/items/_form.html.erb -->
+<%= form_with(model: item) do |f| %>
+  <% if item.errors.any? %>
+    <div style="color:red"><%= item.errors.full_messages.to_sentence %></div>
+  <% end %>
+
+  <p>Title<br><%= f.text_field :title, required: true %></p>
+  <p>Notes<br><%= f.text_area :notes, rows: 20 %></p>
+
+  <p>Category<br>
+    <%= f.collection_select :category_id, Category.order(:name), :id, :name, include_blank: false %>
+  </p>
+  <p>Mood<br>
+    <%= f.collection_select :mood_id, Mood.order(:name), :id, :name, include_blank: false %>
+  </p>
+  <p>Parent<br>
+    <%= f.collection_select :parent_id, Item.order(:title), :id, :title, include_blank: true %>
+  </p>
+
+<p>Personal impact
+      <input type="range"
+             name="item[personal_impact]"
+             min="0" max="5" step="1"
+             value="<%= @item.personal_impact %>"
+             ></p>
+
+<p>Emotional impact
+        <input type="range"
+             name="item[emotional_impact]"
+             min="0" max="5" step="1"
+             value="<%= @item.emotional_impact %>"
+             ></p>
+  <p>Family impact
+        <input type="range"
+             name="item[family_impact]"
+             min="0" max="5" step="1"
+             value="<%= @item.family_impact %>"
+             ></p>
+
+<p>Time estimate (minutes)
+  <span id="minutes_label"><%= @item.time_estimate_minutes && @item.time_estimate_minutes == HomeController::MAX_MINUTES ? "ShitTon" : (@item.time_estimate_minutes ? "#{@minutes} min" : @item.DEFAULT_ESTIMATE ) %></span><br>
+  <input type="range"
+         name="item[time_estimate_minutes]"
+         min="0" max="<%= HomeController::MAX_MINUTES %>" step="15"
+         value="<%= @item.time_estimate_minutes %>"
+         oninput="document.getElementById('minutes_label').textContent = (this.value == this.max ? 'ShitTon' : (this.value + ' min'));">
+</p>
+
+  <p>Cost (cents) <%= f.number_field :cost_cents, min: 0, step: 1 %></p>
+  <p>Deadline <%= f.date_field :deadline %></p>
+  <p>Done <%= f.check_box :done %></p>
+
+  <p><%= f.submit %></p>
+<% end %>

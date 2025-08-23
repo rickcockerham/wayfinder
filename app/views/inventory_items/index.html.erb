@@ -1,0 +1,20 @@
+<!-- app/views/inventory_items/index.html.erb -->
+<h1>Inventory</h1>
+
+<p><%= link_to "Back", root_path %></p>
+<p><%= link_to "New Inventory Item", new_inventory_item_path %></p>
+<p><%= link_to "Zeros", inventory_items_path(zeros: 1) %></p>
+<table border="1" cellpadding="6">
+  <tr><th>Name</th><th>Qty</th><th>Location</th><th></th></tr>
+  <% @inventory_items.each do |ii| %>
+    <tr>
+      <td><%= link_to ii.name, ii %></td>
+      <td><%= ii.qty_have %></td>
+      <td><%= ii.location&.name %></td>
+      <td>
+        <%= link_to "Edit", edit_inventory_item_path(ii) %> |
+        <%= link_to "Destroy", ii, data: { turbo_method: :delete, turbo_confirm: "Delete?" } %>
+      </td>
+    </tr>
+  <% end %>
+</table>

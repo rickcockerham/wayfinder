@@ -1,0 +1,5 @@
+<!-- app/views/item_blocks/show.html.erb -->
+<p><%= link_to "Back", item_blocks_path %> | <%= link_to "Edit", edit_item_block_path(@item_block) %></p>
+<h1>Block Edge</h1>
+<p><strong>Blocker:</strong> <%= link_to @item_block.blocker.title, @item_block.blocker %></p>
+<p><strong>Blocked:</strong> <%= link_to @item_block.blocked.title, @item_block.blocked %></p>

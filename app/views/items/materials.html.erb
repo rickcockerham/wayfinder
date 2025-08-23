@@ -1,0 +1,86 @@
+<!-- app/views/items/materials.html.erb -->
+<p>
+  <%= link_to "Back to Item", @item %>
+</p>
+<h1>Materials for: <%= @item.title %></h1>
+<%= render "materialist", item: @item %>
+
+<!-- Search/filter -->
+<%= form_with url: materials_item_path(@item), method: :get, local: true do %>
+  <label>Quick search:
+    <input type="text" name="q" value="<%= @q %>" placeholder="type to filter by name">
+  </label>
+  <button type="submit">Filter</button>
+<% end %>
+
+<hr>
+
+<!-- Bulk add/update form -->
+<%= form_with url: materials_post_item_path(@item), method: :post, local: true do %>
+  <!-- keep search & page when posting -->
+  <input type="hidden" name="q" value="<%= @q %>">
+  <input type="hidden" name="page" value="<%= @page %>">
+
+  <h3>Quick add (new materials)</h3>
+  <div style="
+              display:grid;
+              grid-template-columns: 1fr 90px minmax(60px, 240px); /* name | qty | shop */
+              gap:.5rem;
+              max-width:720px;
+              align-items:center;">
+    <% 3.times do %>
+      <input type="text"   name="new_names[]" placeholder="name">
+      <input type="number" name="new_qtys[]"  placeholder="qty" min="0" step="1">
+      <select name="new_shop_ids[]">
+        <option value=""></option>
+        <% @shops.each do |s| %>
+          <option value="<%= s.id %>"><%= s.name %></option>
+        <% end %>
+      </select>
+      <% end %>
+  </div>
+
+  <h3 style="margin-top:1rem;">Catalog (Inventory)</h3>
+  <p>Enter an integer in any row to attach/update that material for this item.</p>
+
+  <table border="1" cellpadding="6" style="width:100%; max-width:100%;">
+    <tr>
+      <th>Name</th>
+      <th>Unit</th>
+      <th>Qty have</th>
+      <th>Qty needed (add)</th>
+      <th>Already on item?</th>
+    </tr>
+    <% @inventory_page.each do |inv| %>
+      <% existing = @req_by_downcase[inv.name.downcase] %>
+      <tr>
+        <td><%= inv.name %></td>
+        <td><%= inv.unit %></td>
+        <td><%= inv.qty_have %></td>
+        <td>
+          <input type="number" name="quantities[<%= inv.id %>]" min="0" step="1" value="0" style="width:6rem;">
+        </td>
+        <td>
+          <% if existing %>
+            ✓ <%= existing.qty_needed %> <%= existing.unit %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </table>
+
+  <!-- Pagination -->
+  <div style="margin-top:1rem;">
+    <% if @page > 1 %>
+      <%= link_to "← Prev", materials_item_path(@item, q: @q, page: @page - 1) %>
+    <% end %>
+    <span style="margin:0 .5rem;">Page <%= @page %> / <%= @pages.zero? ? 1 : @pages %></span>
+    <% if @page < @pages %>
+      <%= link_to "Next →", materials_item_path(@item, q: @q, page: @page + 1) %>
+    <% end %>
+  </div>
+
+  <div style="margin-top:1rem;">
+    <button type="submit">Submit</button>
+  </div>
+<% end %>

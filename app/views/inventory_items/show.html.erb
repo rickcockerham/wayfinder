@@ -1,0 +1,5 @@
+<!-- app/views/inventory_items/show.html.erb -->
+<p><%= link_to "Back", inventory_items_path %> | <%= link_to "Edit", edit_inventory_item_path(@inventory_item) %></p>
+<h1><%= @inventory_item.name %></h1>
+<p><strong>Qty:</strong> <%= @inventory_item.qty_have %> <%= @inventory_item.unit %></p>
+<p><strong>Location:</strong> <%= @inventory_item.location&.name %></p>

@@ -1,0 +1,58 @@
+<!-- app/views/shopping/index.html.erb -->
+<h1>Shopping List</h1>
+<%= link_to 'Back', root_path %>
+
+<%= form_with url: shopping_path, method: :get, local: true do %>
+  <label>Vendor:
+    <select name="shop_id">
+      <% @shops.each do |s| %>
+        <option value="<%= s.id %>" <%= "selected" if s.id == @shop_id %>><%= s.name %></option>
+      <% end %>
+    </select>
+  </label>
+
+  <button type="submit" style="margin-left:1rem;">Update</button>
+<% end %>
+
+<% if @requirements.none? %>
+  <p style="margin-top:1rem;">No materials for this vendor.</p>
+<% else %>
+  <%= form_with url: shopping_purchase_path, method: :post, local: true do %>
+    <input type="hidden" name="shop_id" value="<%= @shop_id %>">
+
+    <p><label style="margin-left:1rem;">Inventory Storage:
+      <select name="location_id">
+        <option value=""></option>
+        <% @locations.each do |loc| %>
+        <option value="<%= loc.id %>" <%= "selected" if loc.id == @location_id %>><%= loc.name %></option>
+        <% end %>
+      </select>
+    </label>
+    </p>
+
+    <% @reqs_by_item.each do |item, reqs| %>
+      <h3 style="margin-top:1.5rem;"><%= link_to item.title, item_path(item) %></h3>
+      <table border="1" cellpadding="6" style="width:100%; max-width:100%;">
+        <tr>
+          <th style="width:28px;"><input type="checkbox" onclick="
+            this.closest('table').querySelectorAll('input[type=checkbox].line').forEach(cb => cb.checked = this.checked)
+          "></th>
+          <th>Material</th>
+          <th>Qty Needed</th>
+          <th>Unit</th>
+        </tr>
+        <% reqs.each do |mr| %>
+          <tr id="<%= dom_id(mr) %>">
+            <td><input class="line" type="checkbox" name="purchase_ids[]" value="<%= mr.id %>"></td>
+            <td><%= mr.name %></td>
+            <td><%= mr.qty_needed %></td>
+          </tr>
+        <% end %>
+      </table>
+    <% end %>
+
+    <div style="margin-top:1rem;">
+      <button type="submit">Mark selected as purchased → move to inventory</button>
+    </div>
+  <% end %>
+<% end %>

@@ -1,0 +1,15 @@
+<!-- app/views/inventory_items/_form.html.erb -->
+<%= form_with(model: inventory_item) do |f| %>
+  <% if inventory_item.errors.any? %>
+    <div style="color:red"><%= inventory_item.errors.full_messages.to_sentence %></div>
+  <% end %>
+  <p>Name<br><%= f.text_field :name, required: true %></p>
+  <p>Qty have<br><%= f.number_field :qty_have, step: 0.01, min: 0 %></p>
+  <p>Location<br>
+    <%= f.collection_select :location_id, Location.order(:name), :id, :name, include_blank: true %>
+  </p>
+   <p>Default Vendor<br>
+    <%= f.collection_select :shop_id, Shop.order(:name), :id, :name %>
+  </p>
+  <p><%= f.submit %></p>
+<% end %>

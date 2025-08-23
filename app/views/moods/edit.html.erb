@@ -1,0 +1,4 @@
+<!-- app/views/COLLECTION/edit.html.erb -->
+<h1>Edit <%= controller_name.singularize.titleize %></h1>
+<%= render "form" %>
+<p><%= link_to "Back", url_for(action: :show, id: instance_variable_get("@#{controller_name.singularize}").id) %></p>

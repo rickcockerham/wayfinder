@@ -1,0 +1,16 @@
+<!-- app/views/material_requirements/_form.html.erb -->
+<%= form_with(model: material_requirement) do |f| %>
+  <% if material_requirement.errors.any? %>
+    <div style="color:red"><%= material_requirement.errors.full_messages.to_sentence %></div>
+  <% end %>
+  <p>Item<br>
+    <%= f.collection_select :item_id, Item.order(:title), :id, :title, include_blank: false %>
+  </p>
+  <p>Name<br><%= f.text_field :name, required: true %></p>
+  <p>Qty needed<br><%= f.number_field :qty_needed, step: 0.01, min: 0 %></p>
+  <p>Unit<br><%= f.text_field :unit %></p>
+  <p>Shop<br>
+    <%= f.collection_select :shop_id, Shop.order(:name), :id, :name, include_blank: true %>
+  </p>
+  <p><%= f.submit %></p>
+<% end %>

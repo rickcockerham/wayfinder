@@ -1,0 +1,9 @@
+<!-- app/views/COLLECTION/_form.html.erb -->
+<% rec = instance_variable_get("@#{controller_name.singularize}") %>
+<%= form_with(model: rec) do |f| %>
+  <% if rec.errors.any? %>
+    <div style="color:red"><%= rec.errors.full_messages.to_sentence %></div>
+  <% end %>
+  <p>Name<br><%= f.text_field :name, required: true %></p>
+  <p><%= f.submit %></p>
+  <% end %>
