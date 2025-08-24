@@ -3,7 +3,7 @@ class ItemBlocksController < ApplicationController
   before_action :set_item_block, only: %i[show edit update destroy]
 
   def index
-    @item_blocks = ItemBlock.includes(:blocker, :blocked).order(created_at: :desc)
+    @item_blocks = ItemBlock.includes(:blocker, :blocked)
   end
 
   def show; end

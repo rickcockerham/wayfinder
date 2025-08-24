@@ -1,6 +1,8 @@
 <!-- app/views/items/show.html.erb -->
-<p><%= link_to "Back", root_path %> | <%= link_to "Materials", materials_item_path(@item) %> |
-<%= link_to "Edit", edit_item_path(@item) %></p>
+<p><%= link_to "Back", root_path %>
+  <%= link_to "Materials", materials_item_path(@item) %>
+  <%= link_to "Edit", edit_item_path(@item) %>
+  <%= link_to "Add Subitem", new_item_path(parent_id: @item) %></p>
 <h1><%= @item.title %></h1>
 <p><strong>Category:</strong> <%= @item.category&.name %></p>
 <p><strong>Mood:</strong> <%= @item.mood&.name %></p>
@@ -11,8 +13,12 @@
 <p><strong>Deadline:</strong> <%= @item.deadline %></p>
 
 <%= form_with(model: @item) do |f| %>
+<!-- Hidden field stores HTML sent to Rails -->
+<%= f.hidden_field :notes, id: "item_notes" %>
 <p><strong>Done:</strong> <%= f.check_box :done %></p>
-<p><strong>Notes:</strong><br><%= f.text_area :notes, rows: 20, class:"notes" %></p>
+<p><strong>Notes:</strong><br>
+  <div id="notes_editor" class="ql-dark"></div>
+</p>
 <p><%= f.submit %></p>
 <% end %>
 
@@ -35,24 +41,22 @@
 
 <hr>
 <h3>Blocks</h3>
-<p>
-  <%= link_to "Add Blocker → This", new_item_block_path(blocked_id: @item.id) %> |
-  <%= link_to "This → Blocks", new_item_block_path(blocker_id: @item.id) %>
-</p>
 <div style="display:flex; gap:2rem; flex-wrap:wrap">
   <div>
     <h4>Blocked by</h4>
+    <%= link_to "Add Blocker → This", new_item_block_path(blocked_id: @item.id) %>
     <ul>
       <% @blocking_edges.each do |b| %>
-        <li><%= link_to b.blocker.title, b.blocker %> (<%= link_to "edge", b %>)</li>
+        <li><%= link_to b.blocker.title, b.blocker %> (<%= link_to "link", b %>)</li>
       <% end %>
     </ul>
   </div>
   <div>
     <h4>Blocks</h4>
+    <%= link_to "This → Blocks", new_item_block_path(blocker_id: @item.id) %>
     <ul>
       <% @blocks_out.each do |b| %>
-        <li><%= link_to b.blocked.title, b.blocked %> (<%= link_to "edge", b %>)</li>
+        <li><%= link_to b.blocked.title, b.blocked %> (<%= link_to "link", b %>)</li>
       <% end %>
     </ul>
   </div>

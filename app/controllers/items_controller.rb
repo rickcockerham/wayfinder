@@ -3,10 +3,12 @@ class ItemsController < ApplicationController
   before_action :set_item, only: %i[show edit update destroy materials materials_post]
 
   def index
-    @items = Item.includes(:category, :mood, :parent).order_by_importance
+    base = Item.includes(:category, :mood, :parent, :blockers, :blocks).order_by_importance
     if !params[:dones]
-      @items = @items.where(done: false)
+      base = base.where(done: false)
     end
+     items = base.limit(200).to_a
+    @items = DependencyList.new(items).call
   end
 
   def show
@@ -16,6 +18,7 @@ class ItemsController < ApplicationController
 
   def new
     @item = Item.new
+    @item.parent_id ||= params[:parent_id]
   end
 
   def edit; end

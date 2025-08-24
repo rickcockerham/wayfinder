@@ -15,10 +15,14 @@ class HomeController < ApplicationController
     @per  = (params[:per].to_i if PER_OPTIONS.include?(params[:per].to_i)) || 5
 
     # --- base scope ---
-    scope = Item.includes(:category, :mood, :material_requirements).where(done: false)
+    scope = Item
+      .includes(:category, :mood, :material_requirements) # keep your eager-loads
+      .where(done: false)
+      .where.missing(:blocking_edges)   # ⬅️ exclude anything with a blocker
     scope = scope.where(mood_id: @selected_mood_ids) if @selected_mood_ids.any?
     scope = scope.where(category_id: @selected_category_id) if @selected_category_id.present?
     scope = scope.where("time_estimate_minutes <= ?", @minutes) if @minutes < MAX_MINUTES
+
 
     @items = if @sort == "time"
       scope.order(:time_estimate_minutes, deadline: :asc).to_a

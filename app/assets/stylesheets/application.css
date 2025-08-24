@@ -14,42 +14,4 @@
  *= require_self
  */
 
-.notes {
-    width: 100%;
-}
-.items-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.items-table th, .items-table td {
-  padding: .2rem;
-  border: 1px solid #ddd;
-}
-@media (max-width: 500px) {
-  .items-table thead { display: none; }
-  .items-table, .items-table tbody, .items-table tr, .items-table td {
-    display: block;
-    width: 95%;
-  }
-  .items-table tr {
-    margin: 0 0 .75rem;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: .25rem .25rem;
-  }
-  .items-table td {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.25rem;
-    border: none;
-    border-bottom: 1px dashed #eee;
-    word-break: break-word;
-  }
-  .items-table td:last-child { border-bottom: 0; }
-  .items-table td::before {
-    content: attr(data-label);
-    font-weight: 600;
-  }
-  /* optionally hide low-priority columns on tiny screens */
-  .hide-sm { display: none !important; }
-}
+*= require wayfinder

@@ -1,20 +1,21 @@
 <h1>Items</h1>
-<p><%= link_to "Back", root_path %></p>
-<p><%= link_to "New Item", new_item_path %></p>
-<p><%= link_to "Dones", items_path(dones: 1) %></p>
+<p><%= link_to "Back", root_path %>
+<%= link_to "New Item", new_item_path %>
+<%= link_to "Dones", items_path(dones: 1) %></p>
 
 <div class="table-wrap"><!-- keeps desktop from overflowing if lots of columns -->
 <table class="items-table">
   <thead>
     <tr>
       <th>Title</th><th>Category</th><th class="hide-sm">Mood</th><th class="hide-sm">Time</th>
-      <th class="hide-sm">Impacts (P/E/F)</th><th>Deadline</th><th>Missing</th><th></th>
+      <th class="hide-sm">Impacts (P/E/F)</th><th>Deadline</th><th>Blockers</th><th>Shopping</th><th></th>
     </tr>
   </thead>
   <tbody>
     <% inv = InventoryItem.all.index_by { |i| i.name.downcase } %>
     <% @items.each do |it| %>
-      <% missing = it.missing_materials_by(inv) %>
+    <% missing = it.missing_materials_by(inv) %>
+    <% blks = it.blockers.to_a %>
       <tr id="<%= dom_id(it) %>">
         <td data-label="Title"><%= link_to it.title, it %></td>
         <td data-label="Category"><%= it.category&.name %></td>
@@ -22,7 +23,15 @@
         <td data-label="Time" class="hide-sm"><%= it.time_estimate_minutes %>m</td>
         <td data-label="Impacts" class="hide-sm"><%= [it.personal_impact, it.emotional_impact, it.family_impact].join("/") %></td>
         <td data-label="Deadline"><%= it.deadline %></td>
-        <td data-label="Missing">
+        <td data-label="Blockers">
+          <% if blks.any? %>
+            <%= blks.map { |b| link_to b.title, item_path(b) }.join(", ").html_safe %>
+          <% else %>
+            <span class="status-ready">✅ clear</span>
+          <% end %>
+        </td>
+
+        <td data-label="Shopping">
           <% if missing.empty? %>
             ✅ ready
           <% else %>

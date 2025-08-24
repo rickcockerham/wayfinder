@@ -1,20 +1,26 @@
-<p><%= link_to "New Item", new_item_path %></p>
-<p><%= link_to "Inventory", inventory_items_path %></p>
+<p><%= link_to "New Item", new_item_path %>
+<%= link_to "Inventory", inventory_items_path %>
+  <button id="toggle-filters"
+          type="button"
+          aria-controls="filters-panel"
+          aria-expanded="false">
+    Filters ▾
+  </button>
+</p>
 
+<fieldset style="margin-bottom:1rem; display:grid; gap:.5rem;">
 
-<%= form_with url: root_path, method: :get, local: true do %>
-  <fieldset style="margin-bottom:1rem; display:grid; gap:.5rem;">
-    <legend><strong>Filter</strong></legend>
-
+  <div id="filters-panel" hidden>
     <!-- Moods: checkboxes -->
+    <%= form_with url: root_path, method: :get, local: true do %>
     <div>
       <strong>Mood:</strong><br>
       <% @moods.each do |m| %>
-        <% checked = @selected_mood_ids.include?(m.id) %>
-        <label style="margin-right:1rem;">
-          <input type="checkbox" name="mood_ids[]" value="<%= m.id %>" <%= "checked" if checked %> />
-          <%= m.name %>
-        </label>
+      <% checked = @selected_mood_ids.include?(m.id) %>
+      <label style="margin-right:1rem;">
+        <input type="checkbox" name="mood_ids[]" value="<%= m.id %>" <%= "checked" if checked %> />
+        <%= m.name %>
+      </label>
       <% end %>
     </div>
 
@@ -24,7 +30,7 @@
       <select name="category_id">
         <option value="">All</option>
         <% @categories.each do |c| %>
-          <option value="<%= c.id %>" <%= "selected" if c.id == @selected_category_id %>><%= c.name %></option>
+        <option value="<%= c.id %>" <%= "selected" if c.id == @selected_category_id %>><%= c.name %></option>
         <% end %>
       </select>
     </div>
@@ -51,23 +57,24 @@
       <strong style="margin-left:1rem;">Show:</strong>
       <select name="per">
         <% HomeController::PER_OPTIONS.uniq.each do |n| %>
-          <option value="<%= n %>" <%= "selected" if n==@per %>><%= n %></option>
+        <option value="<%= n %>" <%= "selected" if n==@per %>><%= n %></option>
         <% end %>
       </select>
     </div>
 
     <div><button type="submit">Update list</button></div>
-  </fieldset>
-<% end %>
+    <% end %>
+  </div>
+</fieldset>
 
 <!-- Top items list -->
-<a href="/items"><h2>Top <%= @per %> items</h2></a>
+<a href="/items"><h2>Items</h2></a>
 <div class="table-wrap"><!-- keeps desktop from overflowing if lots of columns -->
   <table class="items-table">
     <thead>
       <tr>
-        <th>Title</th><th>Category</th><th class="hide-sm">Mood</th><th class="hide-sm">Time</th>
-        <th class="hide-sm">Impacts P/E/F</th><th>Deadline</th><th class="hide-sm">Missing</th>
+        <th>Title</th><th class="hide-sm">Category</th><th class="hide-sm">Mood</th><th class="hide-sm">Time</th>
+        <th class="hide-sm">Impacts P/E/F</th><th class="hide-sm">Deadline</th><th class="hide-sm">Missing</th>
       </tr>
     </thead>
     <tbody>
@@ -76,11 +83,11 @@
       <% missing = @missing_by_item[it.id] || [] %>
       <tr id="<%= dom_id(it) %>">
         <td data-label="Title"><%= link_to it.title, it %></td>
-        <td data-label="Category"><%= it.category&.name %></td>
+        <td data-label="Category" class="hide-sm"><%= it.category&.name %></td>
         <td data-label="Mood" class="hide-sm"><%= it.mood&.name %></td>
         <td data-label="Time" class="hide-sm"><%= it.time_estimate_minutes %>m</td>
         <td data-label="Impacts" class="hide-sm"><%= [it.personal_impact, it.emotional_impact, it.family_impact].join("/") %></td>
-        <td data-label="Deadline"><%= it.deadline %></td>
+        <td data-label="Deadline" class="hide-sm"><%= it.deadline %></td>
         <td data-label="Missing">
           <% if missing.empty? %>
           ✅ ready
@@ -95,7 +102,7 @@
 </div>
 
 <!-- Shopping list by vendor -->
-<a href="/shopping"><h2 style="margin-top:2rem;">Shopping list</h2></a>
+<a href="/shopping"><h2>Shopping list</h2></a>
 
 <% if @shops.any? %>
   <%= form_with url: root_path, method: :get, local: true do %>
@@ -140,3 +147,4 @@
 <%= link_to "Locations", locations_path %>
 <%= link_to "Shops", shops_path %>
 <%= link_to "Categories", categories_path %>
+<%= link_to "Item Blocks", item_blocks_path %>

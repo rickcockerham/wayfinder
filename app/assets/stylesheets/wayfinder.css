@@ -1,0 +1,474 @@
+/* app/assets/stylesheets/wayfinder_dark.css */
+
+/* ---------- THEME TOKENS ---------- */
+:root {
+  --bg:        #0c0f14;   /* deep space */
+  --bg-2:      #11161d;   /* panels */
+  --surface:   #151b22;   /* cards/tables */
+  --surface-2: #1a2230;
+  --text:      #e6edf3;   /* primary */
+  --muted:     #a6b3c0;   /* secondary text */
+  --border:    #2a3545;
+  --accent:    #6cf0ff;   /* neon cyan */
+  --accent-2:  #a978ff;   /* neon violet */
+  --danger:    #ff6b7a;
+  --ok:        #5cff9a;
+  --shadow:    rgba(0,0,0,.6);
+  --glow:      0 0 0 transparent, 0 0 18px rgba(108, 240, 255, .25), inset 0 0 0 transparent;
+  --stone-1: #6cf0ff; /* cyan */
+  --stone-2: #a978ff; /* violet */
+  --stone-3: #5cff9a; /* green */
+  --stone-4: #f0f06c; /* yellow */
+}
+
+/* ---------- GLOBAL ---------- */
+html, body {
+  background: radial-gradient(1200px 800px at 20% 0%, #0e131a 0%, var(--bg) 60%) fixed;
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  line-height: 1.45;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+h1,h2,h3,h4 {
+  letter-spacing: .02em;
+  margin: .2rem 0 .6rem;
+  color: #f1f6fb;
+  text-shadow: 0 0 18px rgba(169,120,255,.15);
+}
+
+hr { border: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 1rem 0; }
+
+legend { color: var(--muted); }
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .75rem 1rem;
+  background: linear-gradient(180deg, var(--bg-2), var(--surface));
+  box-shadow: 0 6px 18px var(--shadow);
+}
+
+/* subtle “panel” wrapper if you used .table-wrap from earlier advice */
+.table-wrap {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 24px var(--shadow);
+  padding: .25rem;
+}
+
+/* ---------- FORMS ---------- */
+input, select, textarea, button {
+  font: inherit; color: var(--text);
+}
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="search"],
+textarea,
+select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .45rem .65rem;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .05s ease;
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108,240,255,.2), var(--glow);
+}
+input::placeholder, textarea::placeholder { color: #7f8b99; }
+
+input[type="checkbox"] {
+  width: 16px; height: 16px; margin-right: .35rem;
+  accent-color: var(--accent);
+}
+label { color: var(--muted); }
+
+/* Buttons (and links that look like buttons) */
+button, .btn, input[type="submit"] {
+  cursor: pointer;
+  background: linear-gradient(180deg, #182534, #111926);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: .5rem .9rem;
+  letter-spacing: .02em;
+  box-shadow: 0 8px 20px var(--shadow), 0 0 14px rgba(108,240,255,.15);
+  transition: transform .05s ease, box-shadow .15s ease, border-color .15s ease;
+}
+button:hover, .btn:hover, input[type="submit"]:hover {
+  border-color: var(--accent);
+  box-shadow: 0 10px 24px var(--shadow), 0 0 18px rgba(108,240,255,.25);
+}
+button:active, .btn:active, input[type="submit"]:active {
+  transform: translateY(1px);
+}
+
+/* Destructive links styled as danger (if you use data-turbo-method=delete links) */
+a[data-turbo-method="delete"], a[data-method="delete"] {
+  color: var(--danger);
+}
+a[data-turbo-method="delete"]:hover, a[data-method="delete"]:hover {
+  text-decoration: underline;
+}
+
+/* Range slider (time commitment) */
+input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  width: min(420px, 100%);
+  height: 4px; background: #2a3545; border-radius: 999px;
+  border: 1px solid var(--border);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--accent), #37a7b3);
+  border: 1px solid #67e8f9;
+  box-shadow: 0 0 0 3px rgba(108,240,255,.25);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--accent), #37a7b3);
+  border: 1px solid #67e8f9;
+  box-shadow: 0 0 0 3px rgba(108,240,255,.25);
+}
+
+/* ---------- TABLES ---------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden; /* for rounded corners */
+  box-shadow: 0 12px 28px var(--shadow);
+}
+th, td {
+  padding: .6rem .7rem;
+  border-bottom: 1px solid #223041;
+}
+th {
+  text-align: left;
+  font-weight: 600;
+  color: #dce6f2;
+  background: linear-gradient(180deg, #17202b, #121820);
+  position: sticky; top: 0; z-index: 1;
+}
+tr:nth-child(even) td { background: rgba(255,255,255,.01); }
+tr:hover td { background: rgba(108,240,255,.05); }
+
+/* “Ready”/status chips inside tables */
+td:has(> .status-ready), .status-ready {
+  color: var(--ok);
+  font-weight: 600;
+}
+td .status-missing { color: var(--danger); }
+
+/* Action links cell */
+td a + a::before { content: " | "; color: #4b5a6b; }
+
+/* ---------- MESSAGES / FLASH ---------- */
+.notice, .alert {
+  margin: .75rem 0;
+  padding: .6rem .8rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg-2), var(--surface));
+  box-shadow: 0 10px 24px var(--shadow);
+}
+.notice { color: var(--ok); border-color: rgba(92,255,154,.4); }
+.alert  { color: var(--danger); border-color: rgba(255,107,122,.4); }
+
+/* ---------- UTILITIES ---------- */
+.muted { color: var(--muted); }
+.card {
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 12px 28px var(--shadow);
+}
+
+/* Mobile stacked tables (works if you used Option B earlier; safe otherwise) */
+@media (max-width: 720px) {
+  .items-table thead { display: none; }
+  .items-table, .items-table tbody, .items-table tr, .items-table td {
+    display: block; width: 100%;
+  }
+  .items-table tr {
+    margin: 0 0 .8rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: linear-gradient(180deg, var(--surface), var(--surface-2));
+    box-shadow: 0 8px 18px var(--shadow);
+  }
+  .items-table td {
+    display: flex; justify-content: space-between; gap: 1rem;
+    border: 0; border-bottom: 1px dashed #243244;
+  }
+  .items-table td:last-child { border-bottom: 0; }
+  .items-table td::before { content: attr(data-label); color: var(--muted); font-weight: 600; }
+  .hide-sm { display: none !important; }
+}
+
+/* ---------- SMALL FIXES FOR YOUR PAGES ---------- */
+/* “✅ ready” cell can use this span to get the green color without HTML changes */
+td:has(> :where(span, i, b):contains("ready")) { color: var(--ok); }
+/* If you literally print '✅ ready' text, keep it readable on dark */
+td { color: var(--text); }
+
+/* Make legends/labels slightly neon on hover for that holo-UI vibe */
+label:hover { color: var(--accent); }
+
+/* Turbo stream flash container (if you use one) */
+turbo-frame, turbo-stream { color: inherit; }
+
+
+/* ========== Links as soft dark buttons ========== */
+/* ========= Iridescent stone links (no HTML changes) ========= */
+
+/* Base stone */
+a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: .45ch;
+  padding: .55rem .95rem;
+  border-radius: 14px;
+  border: 1px solid transparent; /* real border is the iridescent rim below */
+  color: var(--text);
+  line-height: 1.1;
+  text-decoration: none !important;
+
+  /* Polished dark “stone” body with subtle chroma pockets */
+  background:
+    radial-gradient(110% 160% at 20% 15%, rgba(169,120,255,.14), transparent 55%),
+    radial-gradient(120% 170% at 80% 20%, rgba(108,240,255,.12), transparent 60%),
+    radial-gradient(120% 140% at 60% 95%, rgba(92,255,154,.10), transparent 55%),
+    linear-gradient(180deg, #1a2330, #0e151f);
+  background-blend-mode: screen, screen, screen, normal;
+
+  /* Soft depth */
+  box-shadow:
+    0 10px 22px rgba(0,0,0,.45),
+    inset 0 0 0 1px rgba(255,255,255,.02),
+    inset 0 18px 36px rgba(255,255,255,.04);
+
+  transition:
+    transform .06s ease,
+    box-shadow .18s ease,
+    background .25s ease,
+    filter .25s ease;
+}
+
+/* Iridescent rim using a gradient mask (1px ring) */
+a::after {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  padding: 1px; /* ring thickness */
+  background: conic-gradient(
+    from 0deg,
+    var(--stone-1),
+    var(--stone-2),
+    var(--stone-3),
+    var(--stone-1),
+    var(--stone-4),
+    var(--stone-2)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: .75;
+  pointer-events: none;
+  filter: saturate(110%) blur(.2px);
+  transition: opacity .18s ease, filter .25s ease;
+}
+
+/* Glassy moving sheen that sweeps on hover/focus */
+a::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: calc(14px - 2px);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.02)),
+    linear-gradient(90deg, transparent 0%, rgba(255,255,255,.18) 50%, transparent 100%);
+  mix-blend-mode: screen;
+  opacity: .0;
+  transform: translateX(-120%) rotate(12deg);
+  pointer-events: none;
+  transition: opacity .25s ease, transform .6s ease;
+}
+
+/* Hover/active effects */
+a:hover {
+  box-shadow:
+    0 12px 26px rgba(0,0,0,.5),
+    0 0 22px rgba(108,240,255,.18),
+    inset 0 22px 44px rgba(255,255,255,.05);
+  filter: saturate(110%);
+}
+a:hover::after { opacity: .95; filter: saturate(125%) blur(.15px); }
+a:hover::before { opacity: 1; transform: translateX(20%) rotate(12deg); }
+a:active { transform: translateY(1px); }
+
+a:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(108,240,255,.25),
+    0 10px 24px rgba(0,0,0,.5);
+}
+
+/* Compact stones inside table cells */
+table td a { padding: .4rem .7rem; border-radius: 12px; font-size: .95rem; }
+td a + a { margin-left: .35rem; }
+td a + a::before { content: none !important; } /* kill old pipe separators */
+
+/* “Danger” stones for destructive actions */
+a[data-turbo-method="delete"],
+a[data-method="delete"] {
+  --stone-1: #ff6b7a;
+  --stone-2: #ff9fb0;
+  --stone-3: #ff6b7a;
+  --stone-4: #ffd1d7;
+  color: #ffe9ec;
+  background:
+    radial-gradient(110% 160% at 20% 15%, rgba(255,159,176,.18), transparent 55%),
+    radial-gradient(120% 170% at 80% 20%, rgba(255,107,122,.14), transparent 60%),
+    linear-gradient(180deg, #2a1418, #1b0e12);
+}
+
+/* Respect reduced motion: don’t sweep the sheen */
+@media (prefers-reduced-motion: reduce) {
+  a::before { transition: opacity .15s ease; transform: none; }
+  a:hover::before { opacity: .6; }
+}
+
+/* ==== Iridescent stones: slow saturation + subtle 3° rotate (no translation) ==== */
+
+/* Base: start neutral, ease saturation slowly */
+a {
+  filter: saturate(100%);
+  transition:
+    filter .7s ease,            /* slower color bloom */
+    box-shadow .35s ease,
+    background .4s ease,
+    transform .06s ease;
+}
+
+a:hover {
+  filter: saturate(150%);       /* gentle pop */
+}
+
+/* Iridescent rim: also ease saturation/opacity slowly */
+a::after {
+  transition: opacity .6s ease, filter .7s ease;
+}
+a:hover::after {
+  opacity: .90;
+  filter: saturate(130%);
+}
+
+/* Sheen panel: no slide—just a tiny rotation */
+a::before {
+  opacity: .25;                                 /* faint by default */
+  transform: rotate(0deg);                      /* no translate */
+  transition: opacity .6s ease, transform 1s ease;
+}
+a:hover::before {
+  opacity: .65;                                 /* slightly brighter on hover */
+  transform: rotate(12deg);                      /* subtle twist only */
+}
+
+/* Compact stones in tables inherit the same behavior; nothing else to do */
+
+.notes {
+    width: 90%;
+}
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.items-table th, .items-table td {
+  padding: .2rem;
+  border: 1px solid #ddd;
+}
+@media (max-width: 500px) {
+  .items-table thead { display: none; }
+  .items-table, .items-table tbody, .items-table tr, .items-table td {
+    display: block;
+    width: 95%;
+  }
+  .items-table tr {
+    margin: 0 0 .75rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: .25rem .25rem;
+  }
+  .items-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.25rem;
+    border: none;
+    border-bottom: 1px dashed #eee;
+    word-break: break-word;
+  }
+  .items-table td:last-child { border-bottom: 0; }
+  .items-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+  }
+  /* optionally hide low-priority columns on tiny screens */
+  .hide-sm { display: none !important; }
+}
+
+/* Quill dark skin to match your theme */
+.ql-toolbar.ql-snow {
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  border: 1px solid var(--border);
+  border-radius: 10px 10px 0 0;
+  color: var(--text);
+}
+.ql-toolbar .ql-picker, .ql-toolbar button { color: var(--text); }
+.ql-toolbar .ql-stroke { stroke: var(--text); }
+.ql-toolbar .ql-fill { fill: var(--text); }
+.ql-toolbar button:hover .ql-stroke { stroke: var(--accent); }
+.ql-toolbar button:hover .ql-fill   { fill: var(--accent); }
+
+.ql-container.ql-snow {
+  background: linear-gradient(180deg, #101722, #0c1118);
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 10px 10px;
+  color: var(--text);
+  min-height: 180px;
+}
+.ql-container .ql-editor {
+  color: var(--text);
+}
+.ql-editor a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+
+/* Make the editor look like a “panel” */
+#notes_editor {
+  box-shadow: 0 10px 24px var(--shadow);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* Filters panel look */
+#filters-panel {
+  margin-top: .6rem;
+  padding: .8rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  box-shadow: 0 10px 24px var(--shadow);
+}
+#filters-panel[hidden] { display: none !important; }
