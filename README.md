@@ -25,7 +25,6 @@ It also tracks materials vs. inventory, builds a shopping list by vendor, and re
 
   * Title, notes, category, mood
   * Impacts (personal / emotional / family), time estimate, cost, deadline, done
-  * Parent/child relationships (for outlining)
   * **Blockers**: “B blocks A” = A won’t be suggested until B is done
 * **Scoring & Order**
 
@@ -197,20 +196,6 @@ server {
 
 ## Usage tips
 
-### Bulk import (fast capture)
-
-Paste multiple items (one per line) in **Items → Bulk paste**:
-
-```
-Title | category=shop | mood=work | pi=3 ei=2 fi=1 | t=120 | cost=50 | deadline=2025-09-01 | materials="screws:50 pcs; plywood:1 sheet"
-```
-
-Shorthand:
-
-* `pi/ei/fi` → impacts
-* `t` → minutes
-* `materials` → `name:qty unit; name:qty unit; …`
-
 ### Materials & shopping
 
 * Each item has a **Materials** link → a paged list of all materials with a quick search
@@ -272,33 +257,15 @@ Links are rendered as soft **iridescent buttons**. 🎛️ Lower the effect by r
 
 ---
 
-## Roadmap / ideas
-
-* Optional email reminders for upcoming deadlines
-* Calendar feed (ICS) for deadlines
-* Per-item attachments (Active Storage / S3)
-* Multi-user roles (if needed)
-
----
-
 ## License
 
-MIT — see `LICENSE` (or choose a different license if you prefer).
+MIT — see `LICENSE`
 
 ---
 
 ## Contributing
 
 PRs are welcome. Please keep changes small and focused; include a brief description and, when relevant, a screenshot or GIF.
-
----
-
-## Troubleshooting
-
-* **MySQL gem fails**: install headers `sudo apt install -y libmysqlclient-dev` and re-bundle.
-* **Rails 403 in production**: add your host/IP to `config.hosts` in `production.rb`.
-* **Credentials error**: set `RAILS_MASTER_KEY` or create `config/credentials/production.key`.
-* **Git push prompts for password**: switch remote to SSH (`git@github.com:rickcockerham/wayfinder.git`) and add your SSH key.
 
 ---
 
