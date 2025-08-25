@@ -1,5 +1,6 @@
 *.rbc
 *~
+config/credentials.yml.enc
 capybara-*.html
 .rspec
 /db/*.sqlite3

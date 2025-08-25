@@ -123,4 +123,55 @@ class Item < ApplicationRecord
     )
   }
 
+  enum recurrence_kind: { none: 0, fixed_schedule: 1, after_completion: 2 }, _prefix: :recurrence
+  enum recurrence_unit: { day: 0, week: 1, month: 2, year: 3 }
+
+  # ...existing associations/validations...
+
+  # Set initial deadline to start date if given and no deadline yet
+  before_validation :apply_recurrence_start_to_deadline, on: :create
+
+  validates :recurrence_interval, numericality: { greater_than_or_equal_to: 1 }
+  validates :recurrence_day_of_month, inclusion: { in: 1..31 }, allow_nil: true
+  validates :recurrence_month_of_year, inclusion: { in: 1..12 }, allow_nil: true
+  validate  :validate_rule_combination
+
+  def validate_rule_combination
+    # If a yearly specific date is desired, both month & day should be present
+    if recurrence_month_of_year.present? ^ recurrence_day_of_month.present?
+      errors.add(:base, "Both month_of_year and day_of_month must be set for a specific yearly date")
+    end
+  end
+
+  def apply_recurrence_start_to_deadline
+    return if deadline.present?
+    self.deadline = recurrence_start_on if recurrence_start_on.present?
+  end
+
+  # === Recurrence calculators ===
+
+  # For Type 1 (fixed_schedule): schedule strictly by the prior scheduled deadline
+  def next_deadline_from_schedule
+    base = (deadline || recurrence_start_on)
+    return nil if base.nil? || recurrence_none?
+    RecurrenceRules.next_occurrence(
+      unit: recurrence_unit.to_sym,
+      interval: recurrence_interval,
+      base_date: base,
+      day_of_month: recurrence_day_of_month,
+      month_of_year: recurrence_month_of_year
+    )
+  end
+
+  # For Type 2 (after_completion): schedule from when you actually finished
+  def next_deadline_from_completion(completed_on: (completed_at&.to_date || Date.current))
+    return nil if recurrence_none?
+    RecurrenceRules.next_occurrence(
+      unit: recurrence_unit.to_sym,
+      interval: recurrence_interval,
+      base_date: completed_on,
+      day_of_month: recurrence_day_of_month,
+      month_of_year: recurrence_month_of_year
+    )
+  end
 end

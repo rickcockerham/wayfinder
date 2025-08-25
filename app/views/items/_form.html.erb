@@ -50,5 +50,69 @@
   <p>Deadline <%= f.date_field :deadline %></p>
   <p>Done <%= f.check_box :done %></p>
 
+
+<fieldset>
+  <legend>Recurrence</legend>
+
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem;align-items:end;max-width:900px">
+    <div>
+      <label for="item_recurrence_kind">Kind</label>
+      <%= f.select :recurrence_kind,
+          options_for_select([
+            ["None", "recurrence_none"],
+            ["Fixed schedule (keep calendar cadence)", "fixed_schedule"],
+            ["After completion (push from when finished)", "after_completion"]
+          ], f.object.recurrence_kind || "none"),
+          {}, class: "w-full" %>
+    </div>
+
+    <div>
+      <label for="item_recurrence_unit">Unit</label>
+      <%= f.select :recurrence_unit,
+          options_for_select([
+            ["Day(s)", "day"],
+            ["Week(s)", "week"],
+            ["Month(s)", "month"],
+            ["Year(s)", "year"]
+          ], f.object.recurrence_unit || "day"),
+          {}, class: "w-full" %>
+    </div>
+
+    <div>
+      <label for="item_recurrence_interval">Every</label>
+      <%= f.number_field :recurrence_interval, min: 1, step: 1, value: (f.object.recurrence_interval.presence || 1), class: "w-full" %>
+    </div>
+
+    <div>
+      <label for="item_recurrence_start_on">Start date (first deadline)</label>
+      <%= f.date_field :recurrence_start_on, class: "w-full" %>
+    </div>
+
+    <!-- Conditional fields (shown by JS when needed) -->
+    <div id="field_dom" style="grid-column:span 2;display:none">
+      <label for="item_recurrence_day_of_month">Day of month</label>
+      <%= f.number_field :recurrence_day_of_month, min: 1, max: 31, step: 1, class: "w-full" %>
+      <div class="muted" style="font-size:.85rem;margin-top:.25rem">
+        Example: 1 = 1st of each month; 31 clamps to last day for short months.
+      </div>
+    </div>
+
+    <div id="field_moy" style="display:none">
+      <label for="item_recurrence_month_of_year">Month of year</label>
+      <%= f.number_field :recurrence_month_of_year, min: 1, max: 12, step: 1, class: "w-full" %>
+      <div class="muted" style="font-size:.85rem;margin-top:.25rem">
+        Example: 10 = October. Use with “Day of month” for a specific date (e.g., Oct 17).
+      </div>
+    </div>
+
+    <div style="grid-column:1/-1" class="muted">
+      <ul style="margin:.5rem 0 0 1rem; padding:0; list-style:disc;">
+        <li><b>Fixed schedule</b>: next deadline = previous scheduled date + frequency (good for bills on the 1st).</li>
+        <li><b>After completion</b>: next deadline = actual completion date + frequency (good for filters/maintenance).</li>
+      </ul>
+    </div>
+  </div>
+</fieldset>
+
   <p><%= f.submit %></p>
 <% end %>

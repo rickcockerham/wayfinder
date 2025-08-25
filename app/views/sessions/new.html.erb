@@ -1,0 +1,11 @@
+<!-- app/views/sessions/new.html.erb -->
+<h1>Sign in</h1>
+<p class="muted">Paste your access key or use a bookmark with <code>?key=...</code>.</p>
+
+<%= form_with url: login_path, method: :post, local: true do %>
+  <label for="key">Access key</label>
+  <input id="key" name="key" type="password" autocomplete="current-password" style="width: min(420px, 100%);">
+  <div style="margin-top:.75rem">
+    <button>Sign in</button>
+  </div>
+<% end %>

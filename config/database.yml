@@ -53,4 +53,5 @@ production:
   <<: *default
   database: wayfinder
   username: pixie
-  password: <%= ENV["WAYFINDER_DATABASE_PASSWORD"] %>
+  host: localhost
+  password: sldjkfwef3

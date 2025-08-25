@@ -8,3 +8,4 @@ pin_all_from "app/javascript/controllers", under: "controllers"
 # config/importmap.rb
 pin "filters_toggle", to: "filters_toggle.js"
 pin "wysiwyg", to: "wysiwyg.js"
+pin "recurrence_form", to: "recurrence_form.js"

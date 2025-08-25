@@ -21,7 +21,7 @@
         <td data-label="Category"><%= it.category&.name %></td>
         <td data-label="Mood" class="hide-sm"><%= it.mood&.name %></td>
         <td data-label="Time" class="hide-sm"><%= it.time_estimate_minutes %>m</td>
-        <td data-label="Impacts" class="hide-sm"><%= [it.personal_impact, it.emotional_impact, it.family_impact].join("/") %></td>
+        <td data-label="Impacts" class="hide-sm">(<%= it.importance_score %>) <%= [it.personal_impact, it.emotional_impact, it.family_impact].join("/") %></td>
         <td data-label="Deadline"><%= it.deadline %></td>
         <td data-label="Blockers">
           <% if blks.any? %>

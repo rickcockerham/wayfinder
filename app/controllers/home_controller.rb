@@ -39,7 +39,7 @@ class HomeController < ApplicationController
 
     # --- shopping list (by vendor) for currently shown items ---
     @selected_shop_id = begin
-      raw = params[:shop_id].presence || @shops.first&.id
+      raw = params[:shop_id].presence || @shops.detect{|s| s.material_requirements.any?}&.id
       raw&.to_i
     end
     @shopping_list = build_shopping_list(@top_items, inv, @selected_shop_id) if @selected_shop_id.present?

@@ -3,12 +3,34 @@ class ItemsController < ApplicationController
   before_action :set_item, only: %i[show edit update destroy materials materials_post]
 
   def index
-    base = Item.includes(:category, :mood, :parent, :blockers, :blocks).order_by_importance
+    items = Item
+              .includes(:material_requirements, :blockers, :blocks)
     if !params[:dones]
-      base = base.where(done: false)
+      items = items.where(done: false)
     end
-     items = base.limit(200).to_a
-    @items = DependencyList.new(items).call
+
+    items = items.to_a
+
+    # 1) compute scores that bubble up max descendant importance
+    scores = MaxCascadeImportance.new(items).call
+
+    # 2) order so each blocker is followed by its blocked projects
+    @items = DependencyOrder.new(items, importance_map: scores).call
+  
+    # scope = Item.includes(:blockers, :blocks, :material_requirements)
+    # if !params[:dones]
+    #   scope = scope.where(done: false)
+    # end
+
+    # items = scope.to_a
+    # scores = MaxCascadeImportance.new(items).call
+    # sorted = items.sort_by { |it| -(scores[it.id] || 0.0) }
+    # @items = sorted.first((params[:size].presence || 300).to_i)
+
+    
+    # base = Item.includes(:category, :mood, :parent, :blockers, :blocks).order_by_importance
+    #  items = base.limit(200).to_a
+    # @items = DependencyList.new(items).call
   end
 
   def show
@@ -31,24 +53,49 @@ class ItemsController < ApplicationController
       render :new, status: :unprocessable_entity
     end
   end
-
+  
   def update
-    if @item.update(item_params)
-      if @item.saved_change_to_done? && @item.done?
-        result = ItemCompletion.new(@item).consume!
-        msg = "Item completed. Consumed #{result.consumed_lines} material line#{'s' if result.consumed_lines != 1}."
-        if result.deficits.any?
-          missing = result.deficits.map { |d| "#{d[:name]} (short #{d[:shortage]})" }.join(", ")
-          msg << " Inventory short on: #{missing}."
-        end
-        redirect_to root_path, notice: msg and return
-      end
-      redirect_to @item, notice: "Item updated."
-    else
-      render :edit, status: :unprocessable_entity
-    end
-  end
+  was_done = @item.done?
+  if @item.update(item_params)
+    if @item.saved_change_to_done? && @item.done? && !was_done
+      # mark completion time (skip validations)
+      @item.update_column(:completed_at, Time.current)
 
+      messages = []
+      messages << "Item completed."
+
+      # 1) Consume materials / decrement inventory
+      begin
+        result = ItemCompletion.new(@item).consume!
+        messages << "Consumed #{result.consumed_lines} material line#{'s' unless result.consumed_lines == 1}."
+        if result.respond_to?(:deficits) && result.deficits.present?
+          missing = result.deficits.map { |d|
+            unit = d[:unit].presence ? " #{d[:unit]}" : ""
+            "#{d[:name]} (short #{d[:shortage]}#{unit})"
+          }.join(", ")
+          messages << "Inventory short on: #{missing}."
+        end
+      rescue => e
+        messages << "Material consumption failed: #{e.message}."
+      end
+
+      # 2) Generate next recurrence (if any)
+      begin
+        next_item = RecurrenceGenerator.new(@item).call
+        messages << "Next occurrence scheduled for #{next_item.deadline}." if next_item
+      rescue => e
+        messages << "Next occurrence could not be created: #{e.message}."
+      end
+
+      return redirect_to(root_path, notice: messages.join(" "))
+    end
+
+    redirect_to @item, notice: "Item updated."
+  else
+    render :edit, status: :unprocessable_entity
+  end
+end
+  
   def destroy
     @item.destroy
     redirect_to items_url, notice: "Item was successfully destroyed."
@@ -129,11 +176,13 @@ class ItemsController < ApplicationController
 
   def item_params
     params.require(:item).permit(
-      :title, :notes,
-      :category_id, :mood_id, :parent_id,
+      :title, :notes, :category_id, :mood_id,
       :personal_impact, :emotional_impact, :family_impact,
-      :time_estimate_minutes, :cost_cents,
-      :deadline, :done
+      :time_estimate_minutes, :cost_cents, :deadline, :done, :parent_id,
+      # NEW recurrence fields
+      :recurrence_kind, :recurrence_unit, :recurrence_interval,
+      :recurrence_day_of_month, :recurrence_month_of_year, :recurrence_start_on
     )
   end
+
 end
