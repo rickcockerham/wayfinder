@@ -1,8 +1,21 @@
 # Wayfinder Time Manager
 ## A project management app for INTP people
 
-A tiny Rails app to help you decide **what to do next** across projects.
-It scores tasks by impact + deadlines, respects dependencies (blockers), tracks materials vs. inventory, gives you a “shopping list”, and supports recurring tasks. The UI is intentionally minimal with a dark, high-contrast sci-fi theme.
+A tiny Rails app to help you decide **what to do today**.
+
+I’ve tried Post-its, spreadsheets, heroic Kanbans, and eleven different apps. One afternoon I literally screamed at my to-do list: “I’m not in the mood for that. I know it’s important. Still no!” The list did not care. Most tools assume “priority” is one magic number and that I’m a robot. I’m not.
+
+Wayfinder lets you filter by mood, category, and time on hand—as in “desk-mood” vs. “sawdust-mood,” not just generic tags. It scores projects by impacts (personal, emotional, family) with a deadline nudge, so something that matters a lot to my partner can outrank something that’s only important to me.
+
+Dependencies actually matter here. If a project is blocked, it won’t be suggested—and the blocker inherits the highest score of anything it blocks. If B is blocking critical A, then B jumps to the top so you stop skipping over it.
+
+Recurring work comes in **two!!** flavors:
+
+Fixed schedule (like everyone else): every N days/weeks/months, the 1st of the month, or a specific date (e.g., July 1).
+
+**After completion**: next due date is N units after you actually finish.  Because if you were two months late changing the furnace filter, scheduling another change next week is… dumb.
+
+It also tracks materials vs. inventory, builds a shopping list by vendor, and remembers where you put things—because Future You will definitely forget.
 
 ---
 
