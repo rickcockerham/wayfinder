@@ -33,17 +33,17 @@ class Item < ApplicationRecord
   end
 
   IMPORTANCE = {
-    weights:        { personal: 3.0, emotional: 2.0, family: 2.0 },
+    weights:        { personal: 2.0, emotional: 3.0, family: 2.0 },
     horizon_days:   30,
-    u_weight:       10.0,  # max pressure at deadline day
-    overdue_cap:    10,
+    u_weight:       15.0,  # max pressure at deadline day
+    overdue_cap:    20,
     overdue_per:    2.0,
     # Time penalty (NEW)
     time_per_hour:  0.5,   # points removed per hour
     time_cap_hours: 20,    # cap hours counted toward penalty
     # Optional quick-task bonus (leave 0.0 to disable)
     quick_minutes:  60,
-    quick_bonus:    0.0
+    quick_bonus:    5.0
   }.freeze
 
   def importance_score(today: Date.current)
@@ -123,7 +123,7 @@ class Item < ApplicationRecord
     )
   }
 
-  enum recurrence_kind: { none: 0, fixed_schedule: 1, after_completion: 2 }, _prefix: :recurrence
+  enum recurrence_kind: { no_recurrence: 0, fixed_schedule: 1, after_completion: 2 }
   enum recurrence_unit: { day: 0, week: 1, month: 2, year: 3 }
 
   # ...existing associations/validations...
@@ -153,7 +153,7 @@ class Item < ApplicationRecord
   # For Type 1 (fixed_schedule): schedule strictly by the prior scheduled deadline
   def next_deadline_from_schedule
     base = (deadline || recurrence_start_on)
-    return nil if base.nil? || recurrence_none?
+    return nil if base.nil? || no_recurrence?
     RecurrenceRules.next_occurrence(
       unit: recurrence_unit.to_sym,
       interval: recurrence_interval,
@@ -165,7 +165,7 @@ class Item < ApplicationRecord
 
   # For Type 2 (after_completion): schedule from when you actually finished
   def next_deadline_from_completion(completed_on: (completed_at&.to_date || Date.current))
-    return nil if recurrence_none?
+    return nil if no_recurrence?
     RecurrenceRules.next_occurrence(
       unit: recurrence_unit.to_sym,
       interval: recurrence_interval,

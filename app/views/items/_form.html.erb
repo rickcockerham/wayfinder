@@ -13,9 +13,6 @@
   <p>Mood<br>
     <%= f.collection_select :mood_id, Mood.order(:name), :id, :name, include_blank: false %>
   </p>
-  <p>Parent<br>
-    <%= f.collection_select :parent_id, Item.order(:title), :id, :title, include_blank: true %>
-  </p>
 
 <p>Personal impact
       <input type="range"
@@ -59,7 +56,7 @@
       <label for="item_recurrence_kind">Kind</label>
       <%= f.select :recurrence_kind,
           options_for_select([
-            ["None", "recurrence_none"],
+            ["None", "no_recurrence"],
             ["Fixed schedule (keep calendar cadence)", "fixed_schedule"],
             ["After completion (push from when finished)", "after_completion"]
           ], f.object.recurrence_kind || "none"),

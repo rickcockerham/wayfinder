@@ -2,11 +2,10 @@
 <p><%= link_to "Back", root_path %>
   <%= link_to "Materials", materials_item_path(@item) %>
   <%= link_to "Edit", edit_item_path(@item) %>
-  <%= link_to "Add Subitem", new_item_path(parent_id: @item) %></p>
+</p>
 <h1><%= @item.title %></h1>
 <p><strong>Category:</strong> <%= @item.category&.name %></p>
 <p><strong>Mood:</strong> <%= @item.mood&.name %></p>
-<p><strong>Parent:</strong> <%= @item.parent&.title %></p>
 <p><strong>Impacts:</strong> P=<%= @item.personal_impact %>, E=<%= @item.emotional_impact %>, F=<%= @item.family_impact %></p>
 <p><strong>Time (min):</strong> <%= @item.time_estimate_minutes %></p>
 <p><strong>Cost (cents):</strong> <%= @item.cost_cents %></p>
@@ -61,4 +60,5 @@
     </ul>
   </div>
 </div>
-<%= link_to "Destroy", @item, method: :delete %>
+<%= button_to "Destroy", @item, method: :delete,
+    data: { turbo_confirm: "Are you sure?" } %>
