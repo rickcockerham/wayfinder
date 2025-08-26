@@ -1,8 +1,21 @@
 # Wayfinder Time Manager
 ## A project management app for INTP people
 
-A tiny Rails app to help you decide **what to do next** across projects.
-It scores tasks by impact + deadlines, respects dependencies (blockers), tracks materials vs. inventory, gives you a “shopping list”, and supports recurring tasks. The UI is intentionally minimal with a dark, high-contrast sci-fi theme.
+A tiny Rails app to help you decide **what to do today**.
+
+I’ve tried Post-its, spreadsheets, heroic Kanbans, and eleven different apps. One afternoon I literally screamed at my to-do list: “I’m not in the mood for that. I know it’s important. Still no!” The list did not care. Most tools assume “priority” is one magic number and that I’m a robot. I’m not.
+
+Wayfinder lets you filter by mood, category, and time on hand—as in “desk-mood” vs. “sawdust-mood,” not just generic tags. It scores projects by impacts (personal, emotional, family) with a deadline nudge, so something that matters a lot to my partner can outrank something that’s only important to me.
+
+Dependencies actually matter here. If a project is blocked, it won’t be suggested—and the blocker inherits the highest score of anything it blocks. If B is blocking critical A, then B jumps to the top so you stop skipping over it.
+
+Recurring work comes in **two!!** flavors:
+
+Fixed schedule (like everyone else): every N days/weeks/months, the 1st of the month, or a specific date (e.g., July 1).
+
+**After completion**: next due date is N units after you actually finish.  Because if you were two months late changing the furnace filter, scheduling another change next week is… dumb.
+
+It also tracks materials vs. inventory, builds a shopping list by vendor, and remembers where you put things—because Future You will definitely forget.
 
 ---
 
@@ -12,7 +25,6 @@ It scores tasks by impact + deadlines, respects dependencies (blockers), tracks 
 
   * Title, notes, category, mood
   * Impacts (personal / emotional / family), time estimate, cost, deadline, done
-  * Parent/child relationships (for outlining)
   * **Blockers**: “B blocks A” = A won’t be suggested until B is done
 * **Scoring & Order**
 
@@ -184,20 +196,6 @@ server {
 
 ## Usage tips
 
-### Bulk import (fast capture)
-
-Paste multiple items (one per line) in **Items → Bulk paste**:
-
-```
-Title | category=shop | mood=work | pi=3 ei=2 fi=1 | t=120 | cost=50 | deadline=2025-09-01 | materials="screws:50 pcs; plywood:1 sheet"
-```
-
-Shorthand:
-
-* `pi/ei/fi` → impacts
-* `t` → minutes
-* `materials` → `name:qty unit; name:qty unit; …`
-
 ### Materials & shopping
 
 * Each item has a **Materials** link → a paged list of all materials with a quick search
@@ -259,33 +257,15 @@ Links are rendered as soft **iridescent buttons**. 🎛️ Lower the effect by r
 
 ---
 
-## Roadmap / ideas
-
-* Optional email reminders for upcoming deadlines
-* Calendar feed (ICS) for deadlines
-* Per-item attachments (Active Storage / S3)
-* Multi-user roles (if needed)
-
----
-
 ## License
 
-MIT — see `LICENSE` (or choose a different license if you prefer).
+MIT — see `LICENSE`
 
 ---
 
 ## Contributing
 
 PRs are welcome. Please keep changes small and focused; include a brief description and, when relevant, a screenshot or GIF.
-
----
-
-## Troubleshooting
-
-* **MySQL gem fails**: install headers `sudo apt install -y libmysqlclient-dev` and re-bundle.
-* **Rails 403 in production**: add your host/IP to `config.hosts` in `production.rb`.
-* **Credentials error**: set `RAILS_MASTER_KEY` or create `config/credentials/production.key`.
-* **Git push prompts for password**: switch remote to SSH (`git@github.com:rickcockerham/wayfinder.git`) and add your SSH key.
 
 ---
 
