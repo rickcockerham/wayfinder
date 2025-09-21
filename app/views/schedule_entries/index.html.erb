@@ -1,0 +1,47 @@
+<%= link_to 'Home', root_path %>
+<!-- Categories palette -->
+<div class="card" style="margin-bottom:1rem">
+  <h3 style="margin-top:0">Categories</h3>
+  <div id="categories-palette" style="display:flex;flex-wrap:wrap;gap:.5rem">
+    <% @categories.each do |cat| %>
+      <span class="cat-chip"
+            draggable="true"
+            data-cat-id="<%= cat.id %>"
+            title="Drag me into a slot">
+        <%= cat.name %>
+      </span>
+    <% end %>
+  </div>
+</div>
+
+<!-- Planner grid -->
+<div id="planner" data-controller="planner-dnd">
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th>Time</th>
+        <% @week.each do |d| %>
+          <th><%= d.strftime("%a %b %-d") %></th>
+        <% end %>
+      </tr>
+    </thead>
+    <tbody>
+      <% ["morning","afternoon","evening"].each do |part| %>
+        <tr>
+          <td data-label="Time" class="muted"><%= part.capitalize %></td>
+
+          <% @week.each do |d| %>
+            <% entries = @by_slot[[d, part]] || [] %>
+            <td class="planner-slot-cell"
+                data-date="<%= d %>"
+                data-day-part="<%= part %>">
+              <turbo-frame id="slot-<%= d.strftime('%Y%m%d') %>-<%= part %>">
+                <%= render partial: "slot", locals: { on_date: d, day_part: part, entries: entries, error: nil } %>
+              </turbo-frame>
+            </td>
+          <% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

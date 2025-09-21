@@ -1,28 +1,29 @@
 # coding: utf-8
 # app/controllers/home_controller.rb
 class HomeController < ApplicationController
+  include FilterPersistence
+
   before_action :load_lookups
 
-  MAX_MINUTES = 600
-  PER_OPTIONS = [5, 10, 20, 30].freeze
-
   def index
-    # --- read params / defaults ---
-    @selected_mood_ids = (params[:mood_ids] || @moods.map(&:id)).map(&:to_i).uniq
-    @selected_category_id = params[:category_id].presence&.to_i
-    @minutes = (params[:minutes].presence || MAX_MINUTES).to_i.clamp(0, MAX_MINUTES)
-    @sort = %w[time importance].include?(params[:sort]) ? params[:sort] : "importance"
-    @per  = (params[:per].to_i if PER_OPTIONS.include?(params[:per].to_i)) || 5
+    # --- read params / defaults via persistence ---
+    f = current_filters
+    @selected_mood_ids    = f[:mood_ids]
+    @selected_category_id = f[:category_id]
+    @minutes              = f[:minutes]
+    @sort                 = f[:sort]
+    @per                  = f[:per]
+    @filters = f
 
     # --- base scope ---
     scope = Item
-      .includes(:category, :mood, :material_requirements) # keep your eager-loads
+      .includes(:category, :mood, :material_requirements)
       .where(done: false)
-      .where.missing(:blocking_edges)   # ⬅️ exclude anything with a blocker
+      .where.missing(:blocking_edges)   # exclude blocked items
+
     scope = scope.where(mood_id: @selected_mood_ids) if @selected_mood_ids.any?
     scope = scope.where(category_id: @selected_category_id) if @selected_category_id.present?
     scope = scope.where("time_estimate_minutes <= ?", @minutes) if @minutes < MAX_MINUTES
-
 
     @items = if @sort == "time"
       scope.order(:time_estimate_minutes, deadline: :asc).to_a
@@ -39,7 +40,7 @@ class HomeController < ApplicationController
 
     # --- shopping list (by vendor) for currently shown items ---
     @selected_shop_id = begin
-      raw = params[:shop_id].presence || @shops.detect{|s| s.material_requirements.any?}&.id
+      raw = params[:shop_id].presence || @shops.detect { |s| s.material_requirements.any? }&.id
       raw&.to_i
     end
     @shopping_list = build_shopping_list(@top_items, inv, @selected_shop_id) if @selected_shop_id.present?

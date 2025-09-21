@@ -24,4 +24,11 @@ Rails.application.routes.draw do
   post "/login",  to: "sessions#create"
   delete "/logout", to: "sessions#destroy"
 
+  get  "/planner", to: "schedule_entries#index", as: :planner
+  resources :schedule_entries, only: [:create, :destroy] do
+    collection do
+      delete :clear # ?on_date=YYYY-MM-DD&day_part=morning
+    end
+  end
+
 end

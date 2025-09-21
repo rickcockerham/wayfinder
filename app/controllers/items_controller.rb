@@ -1,36 +1,22 @@
 # app/controllers/items_controller.rb
 class ItemsController < ApplicationController
+  include FilterPersistence
   before_action :set_item, only: %i[show edit update destroy materials materials_post]
 
   def index
-    items = Item
-              .includes(:material_requirements, :blockers, :blocks)
+    f = current_filters
+
+    scope = Item
+    scope = scope.where(category_id: f[:category_id]) if f[:category_id].present?
     if !params[:dones]
-      items = items.where(done: false)
+      scope = scope.where(done: false)
     end
+    scope = scope.where(mood_id: f[:moods]) if f[:moods].present?
 
-    items = items.to_a
-
-    # 1) compute scores that bubble up max descendant importance
+    items  = scope.includes(:material_requirements, :blockers, :blocks).to_a
     scores = MaxCascadeImportance.new(items).call
-
-    # 2) order so each blocker is followed by its blocked projects
     @items = DependencyOrder.new(items, importance_map: scores).call
-  
-    # scope = Item.includes(:blockers, :blocks, :material_requirements)
-    # if !params[:dones]
-    #   scope = scope.where(done: false)
-    # end
-
-    # items = scope.to_a
-    # scores = MaxCascadeImportance.new(items).call
-    # sorted = items.sort_by { |it| -(scores[it.id] || 0.0) }
-    # @items = sorted.first((params[:size].presence || 300).to_i)
-
-    
-    # base = Item.includes(:category, :mood, :parent, :blockers, :blocks).order_by_importance
-    #  items = base.limit(200).to_a
-    # @items = DependencyList.new(items).call
+    @filters = f
   end
 
   def show
@@ -53,7 +39,7 @@ class ItemsController < ApplicationController
       render :new, status: :unprocessable_entity
     end
   end
-  
+
   def update
   was_done = @item.done?
   if @item.update(item_params)
@@ -95,7 +81,7 @@ class ItemsController < ApplicationController
     render :edit, status: :unprocessable_entity
   end
   end
-  
+
   def destroy
     @item.destroy
     redirect_to items_url, notice: "Item was successfully destroyed."

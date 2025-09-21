@@ -1,0 +1,34 @@
+<%# Renders inside the turbo-frame for a single slot %>
+<div class="slot" data-date="<%= on_date %>" data-day-part="<%= day_part %>">
+  <% if error.present? %>
+    <div class="alert"><%= error %></div>
+  <% end %>
+
+  <div class="slot-chips"
+       ondragover="event.preventDefault()"
+       data-action="dragover->planner-dnd#dragover drop->planner-dnd#drop">
+    <% if entries.any? %>
+      <% entries.each do |e| %>
+        <% frame_id = "slot-#{on_date.strftime('%Y%m%d')}-#{day_part}" %>
+        <%= link_to e.category.name,
+          schedule_entry_path(e),
+          data: { turbo_method: :delete, turbo_frame: frame_id },
+          class: "chip" %>
+      <% end %>
+    <% else %>
+      <span class="muted"></span>
+    <% end %>
+  </div>
+
+  <div class="slot-actions" style="margin-top:.35rem;display:flex;gap:.5rem;align-items:center">
+  </div>
+
+  <%# Hidden form used by the drop handler to add an entry %>
+  <%= form_with url: schedule_entries_path, method: :post,
+        data: { turbo_frame: "slot-#{on_date.strftime('%Y%m%d')}-#{day_part}" },
+        html: { class: "add-entry-form" } do |f| %>
+    <%= hidden_field_tag :on_date, on_date %>
+    <%= hidden_field_tag :day_part, day_part %>
+    <%= hidden_field_tag :category_id, "", id: nil, class: "cat-id-input" %>
+  <% end %>
+</div>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_08_23_181619) do
+ActiveRecord::Schema[7.1].define(version: 2025_09_21_024957) do
   create_table "categories", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.datetime "created_at", null: false
@@ -65,11 +65,21 @@ ActiveRecord::Schema[7.1].define(version: 2025_08_23_181619) do
     t.boolean "done", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "recurrence_kind", default: 0, null: false
+    t.integer "recurrence_unit", default: 0, null: false
+    t.integer "recurrence_interval", default: 1, null: false
+    t.integer "recurrence_day_of_month"
+    t.integer "recurrence_month_of_year"
+    t.date "recurrence_start_on"
+    t.datetime "completed_at"
     t.index ["category_id"], name: "index_items_on_category_id"
     t.index ["deadline"], name: "index_items_on_deadline"
     t.index ["done"], name: "index_items_on_done"
     t.index ["mood_id"], name: "index_items_on_mood_id"
     t.index ["parent_id"], name: "index_items_on_parent_id"
+    t.index ["recurrence_day_of_month", "recurrence_month_of_year"], name: "idx_on_recurrence_day_of_month_recurrence_month_of__a778ad1e01"
+    t.index ["recurrence_kind"], name: "index_items_on_recurrence_kind"
+    t.index ["recurrence_unit", "recurrence_interval"], name: "index_items_on_recurrence_unit_and_recurrence_interval"
     t.index ["time_estimate_minutes"], name: "index_items_on_time_estimate_minutes"
   end
 
@@ -100,6 +110,17 @@ ActiveRecord::Schema[7.1].define(version: 2025_08_23_181619) do
     t.index ["name"], name: "index_moods_on_name", unique: true
   end
 
+  create_table "schedule_entries", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.date "on_date", null: false
+    t.integer "day_part", default: 0, null: false
+    t.bigint "category_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category_id"], name: "index_schedule_entries_on_category_id"
+    t.index ["on_date", "day_part", "category_id"], name: "idx_schedule_entries_unique_slot", unique: true
+    t.index ["on_date", "day_part"], name: "index_schedule_entries_on_on_date_and_day_part"
+  end
+
   create_table "shops", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.datetime "created_at", null: false
@@ -118,4 +139,5 @@ ActiveRecord::Schema[7.1].define(version: 2025_08_23_181619) do
   add_foreign_key "items", "moods"
   add_foreign_key "material_requirements", "items", on_delete: :cascade
   add_foreign_key "material_requirements", "shops"
+  add_foreign_key "schedule_entries", "categories"
 end

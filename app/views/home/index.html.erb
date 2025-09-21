@@ -1,5 +1,6 @@
 <p><%= link_to "New Item", new_item_path %>
 <%= link_to "Inventory", inventory_items_path %>
+<%= link_to "Planner", planner_path %>
   <button id="toggle-filters"
           type="button"
           aria-controls="filters-panel"
@@ -16,10 +17,8 @@
     <div>
       <strong>Mood:</strong><br>
       <% @moods.each do |m| %>
-      <% checked = @selected_mood_ids.include?(m.id) %>
       <label style="margin-right:1rem;">
-        <input type="checkbox" name="mood_ids[]" value="<%= m.id %>" <%= "checked" if checked %> />
-        <%= m.name %>
+        <%= check_box_tag "mood_ids[]", m.id, @filters[:mood_ids].include?(m.id) %> <%= m.name %>
       </label>
       <% end %>
     </div>
@@ -61,6 +60,7 @@
         <% end %>
       </select>
     </div>
+    <%= link_to "Reset filters", root_path(reset_filters: 1), class: "muted pull-right" %>
 
     <div><button type="submit">Update list</button></div>
     <% end %>

@@ -38,6 +38,10 @@ h1,h2,h3,h4 {
   text-shadow: 0 0 18px rgba(169,120,255,.15);
 }
 
+.pull-right {
+    float:right;
+}
+
 hr { border: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 1rem 0; }
 
 legend { color: var(--muted); }
@@ -472,3 +476,16 @@ a:hover::before {
   box-shadow: 0 10px 24px var(--shadow);
 }
 #filters-panel[hidden] { display: none !important; }
+.cat-chip, .chip {
+  display: inline-flex; align-items: center; gap: .35ch;
+  padding: .35rem .6rem; border-radius: 999px;
+  background: linear-gradient(180deg, #1a2330, #0f1622);
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 14px var(--shadow);
+  cursor: grab; user-select: none;
+}
+.cat-chip:hover, .chip:hover { border-color: var(--accent); }
+.planner-slot-cell { vertical-align: top; min-width: 160px; }
+.slot-chips { min-height: 44px; display:flex; flex-wrap:wrap; gap:.35rem; padding:.25rem; }
+.slot { border: 1px dashed #243244; border-radius: 10px; padding: .25rem .35rem; }
+.slot:hover { border-color: var(--accent); }
