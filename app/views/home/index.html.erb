@@ -26,39 +26,33 @@
     <!-- Category: select -->
     <div>
       <strong>Category:</strong><br>
-      <select name="category_id">
-        <option value="">All</option>
-        <% @categories.each do |c| %>
-        <option value="<%= c.id %>" <%= "selected" if c.id == @selected_category_id %>><%= c.name %></option>
-        <% end %>
-      </select>
+      <%= select_tag :category_id,
+          options_from_collection_for_select(Category.order(:name), :id, :name, @filters[:category_id]),
+          include_blank: "All categories" %>
     </div>
 
     <!-- Time: slider -->
     <div>
       <strong>Time commitment:</strong>
-      <span id="minutes_label"><%= @minutes == HomeController::MAX_MINUTES ? "Any" : "#{@minutes} min" %></span><br>
-      <input type="range"
-             name="minutes"
-             min="0" max="<%= HomeController::MAX_MINUTES %>" step="15"
-             value="<%= @minutes %>"
-             oninput="document.getElementById('minutes_label').textContent = (this.value == this.max ? 'Any' : (this.value + ' min'));">
+      <label style="display:block;margin-top:.5rem">
+        Time commitment:
+        <%= select_tag :time_i,
+            options_for_select(
+            HomeController::TIME_INDEX_LABELS.each_with_index.map { |label, i| [label, i] },
+            @filters[:time_i].to_i
+            )
+            %>
+      </label>
     </div>
 
     <!-- Sort + per -->
     <div>
       <strong>Sort:</strong>
-      <select name="sort">
-        <option value="importance" <%= "selected" if @sort=="importance" %>>by importance</option>
-        <option value="time"       <%= "selected" if @sort=="time" %>>by time</option>
-      </select>
+      <%= select_tag :sort, options_for_select([["By importance","importance"], ["By time","time"]], @filters[:sort]) %>
 
       <strong style="margin-left:1rem;">Show:</strong>
-      <select name="per">
-        <% HomeController::PER_OPTIONS.uniq.each do |n| %>
-        <option value="<%= n %>" <%= "selected" if n==@per %>><%= n %></option>
-        <% end %>
-      </select>
+      <%= select_tag :per,
+      options_for_select(FilterPersistence::PER_OPTIONS.map { |n| [n, n] }, @filters[:per].to_i) %>
     </div>
     <%= link_to "Reset filters", root_path(reset_filters: 1), class: "muted pull-right" %>
 

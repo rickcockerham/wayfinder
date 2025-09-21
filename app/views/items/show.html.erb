@@ -7,8 +7,8 @@
 <p><strong>Category:</strong> <%= @item.category&.name %></p>
 <p><strong>Mood:</strong> <%= @item.mood&.name %></p>
 <p><strong>Impacts:</strong> P=<%= @item.personal_impact %>, E=<%= @item.emotional_impact %>, F=<%= @item.family_impact %></p>
-<p><strong>Time (min):</strong> <%= @item.time_estimate_minutes %></p>
-<p><strong>Cost (cents):</strong> <%= @item.cost_cents %></p>
+<p><strong>Time:</strong> <%= FilterPersistence::TIME_INDEX_LABELS[@item.time_estimate_minutes] rescue 'unknown' %></p>
+<p><strong>Cost:</strong> <%= @item.cost_cents %></p>
 <p><strong>Deadline:</strong> <%= @item.deadline %></p>
 
 <%= form_with(model: @item) do |f| %>

@@ -10,7 +10,8 @@ class HomeController < ApplicationController
     f = current_filters
     @selected_mood_ids    = f[:mood_ids]
     @selected_category_id = f[:category_id]
-    @minutes              = f[:minutes]
+    #@minutes              = f[:minutes]
+    @time_i               = f[:time_i]
     @sort                 = f[:sort]
     @per                  = f[:per]
     @filters = f
@@ -23,7 +24,8 @@ class HomeController < ApplicationController
 
     scope = scope.where(mood_id: @selected_mood_ids) if @selected_mood_ids.any?
     scope = scope.where(category_id: @selected_category_id) if @selected_category_id.present?
-    scope = scope.where("time_estimate_minutes <= ?", @minutes) if @minutes < MAX_MINUTES
+    # Apply the time cap from index (0..7). 7 = Forever (no cap).
+    scope = scope.where("time_estimate_minutes <= ?", @time_i) if @time_i < TIME_INDEX_LABELS.length - 1
 
     @items = if @sort == "time"
       scope.order(:time_estimate_minutes, deadline: :asc).to_a
@@ -43,7 +45,7 @@ class HomeController < ApplicationController
       raw = params[:shop_id].presence || @shops.detect { |s| s.material_requirements.any? }&.id
       raw&.to_i
     end
-    @shopping_list = build_shopping_list(@top_items, inv, @selected_shop_id) if @selected_shop_id.present?
+    @shopping_list = build_shopping_list(@items, inv, @selected_shop_id) if @selected_shop_id.present?
   end
 
   private

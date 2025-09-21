@@ -4,8 +4,18 @@ module FilterPersistence
 
   FILTER_KEY = :filters_v2   # session key
   TTL        = 1.hour
-  MAX_MINUTES = 600
+  MAX_MINUTES = 6
   PER_OPTIONS = [5, 20, 100].freeze
+  TIME_INDEX_LABELS = [
+    "Quick",  # 0
+    "Minutes",       # 1
+    "Hours",         # 2
+    "Days",          # 3
+    "Weeks",         # 4
+    "Months",        # 5
+    "Years",         # 6
+    "Forever"        # 7
+  ].freeze
 
   included do
     helper_method :current_filters
@@ -32,12 +42,24 @@ module FilterPersistence
 
   private
 
-  # Merge incoming params (only those you already use: mood_ids, category_id, minutes, sort, per)
+
+  def any_filter_param?
+    params.key?(:mood_ids) || params.key?(:category_id) ||
+      params.key?(:time_i) || params.key?(:quick) ||   # quick maps to 0
+      params.key?(:sort)   || params.key?(:per)
+  end
+
+  # Merge incoming params
   def apply_params(base)
     out = base.dup
     out[:mood_ids] = Array(params[:mood_ids]).reject(&:blank?).map(&:to_i) if params.key?(:mood_ids)
     out[:category_id] = params[:category_id].presence&.to_i if params.key?(:category_id)
-    out[:minutes] = params[:minutes].presence&.to_i if params.key?(:minutes)
+    if params.key?(:time_i)
+      out[:time_i] = params[:time_i].to_i
+    elsif params[:quick].present?
+      out[:time_i] = 0
+    end
+    #out[:minutes] = params[:minutes].presence&.to_i if params.key?(:minutes)
     out[:sort] = params[:sort] if params.key?(:sort)
     out[:per]  = params[:per].presence&.to_i if params.key?(:per)
     out
@@ -51,10 +73,13 @@ module FilterPersistence
   def sanity(f)
     f[:mood_ids] ||= Mood.pluck(:id)
     f[:category_id] ||= nil
-    f[:minutes] = f[:minutes].to_i
-    f[:minutes] = MAX_MINUTES if f[:minutes] <= 0 || f[:minutes] > MAX_MINUTES
+    #f[:minutes] = f[:minutes].to_i
+    #f[:minutes] = MAX_MINUTES if f[:minutes] <= 0 || f[:minutes] > MAX_MINUTES
+    # time_i: clamp to 0..7, default 7 (Forever)
+    ti = f[:time_i].to_i
+    f[:time_i] = (0..7).cover?(ti) ? ti : 7
     f[:sort] = %w[time importance].include?(f[:sort]) ? f[:sort] : "importance"
-    f[:per]  = [5,10,20,30].include?(f[:per].to_i) ? f[:per].to_i : 5
+    f[:per]  = PER_OPTIONS.include?(f[:per].to_i) ? f[:per].to_i : 5
     f
   end
 
@@ -62,7 +87,8 @@ module FilterPersistence
     {
       mood_ids: Mood.pluck(:id),                 # all moods
       category_id: active_category_for_now&.id,  # ← planner drives default
-      minutes: MAX_MINUTES,
+      time_i: 7,
+      #minutes: MAX_MINUTES,
       sort: "importance",
       per: 5
     }
