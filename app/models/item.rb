@@ -36,14 +36,14 @@ class Item < ApplicationRecord
     weights:        { personal: 2.0, emotional: 3.0, family: 2.0 },
     horizon_days:   30,
     u_weight:       15.0,  # max pressure at deadline day
-    overdue_cap:    20,
+    overdue_cap:    30,
     overdue_per:    2.0,
     # Time penalty (NEW)
     time_per_hour:  0.5,   # points removed per hour
     time_cap_hours: 20,    # cap hours counted toward penalty
     # Optional quick-task bonus (leave 0.0 to disable)
-    quick_minutes:  60,
-    quick_bonus:    5.0
+    quick_minutes:  30,
+    quick_bonus:    10.0
   }.freeze
 
   def importance_score(today: Date.current)
@@ -138,7 +138,7 @@ class Item < ApplicationRecord
 
   def validate_rule_combination
     # If a yearly specific date is desired, both month & day should be present
-    if recurrence_month_of_year.present? ^ recurrence_day_of_month.present?
+    if recurrence_unit == "year" && recurrence_month_of_year.present? ^ recurrence_day_of_month.present?
       errors.add(:base, "Both month_of_year and day_of_month must be set for a specific yearly date")
     end
   end
