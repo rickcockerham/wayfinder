@@ -12,6 +12,7 @@
 <fieldset style="margin-bottom:1rem; display:grid; gap:.5rem;">
 
   <div id="filters-panel" hidden>
+    <%= link_to "Reset filters", root_path(reset_filters: 1), class: "muted pull-right" %>
     <!-- Moods: checkboxes -->
     <%= form_with url: root_path, method: :get, local: true do %>
     <div>
@@ -54,7 +55,6 @@
       <%= select_tag :per,
       options_for_select(FilterPersistence::PER_OPTIONS.map { |n| [n, n] }, @filters[:per].to_i) %>
     </div>
-    <%= link_to "Reset filters", root_path(reset_filters: 1), class: "muted pull-right" %>
 
     <div><button type="submit">Update list</button></div>
     <% end %>

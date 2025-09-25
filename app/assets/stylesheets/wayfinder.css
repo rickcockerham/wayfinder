@@ -96,7 +96,7 @@ label { color: var(--muted); }
 /* Buttons (and links that look like buttons) */
 button, .btn, input[type="submit"] {
   cursor: pointer;
-  background: linear-gradient(180deg, #182534, #111926);
+  background: linear-gradient(180deg, #182574, #111946);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 12px;
