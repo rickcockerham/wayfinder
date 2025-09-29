@@ -1,7 +1,7 @@
 <p><%= link_to "New Item", new_item_path %>
 <%= link_to "Inventory", inventory_items_path %>
 <%= link_to "Planner", planner_path %>
-<%= image_tag "wayfinder_logo.png", alt: "Wayfinder", height: "40", class: "pull-right" %>
+<%= image_tag "wayfinder_logo.png", alt: "Wayfinder", height: "80", class: "pull-right", id: "wayfinder-logo"%>
   <br>
   <button id="toggle-filters"
           type="button"
@@ -11,9 +11,6 @@
   </button>
 
 </p>
-
-<fieldset style="margin-bottom:1rem; display:grid; gap:.5rem;">
-
   <div id="filters-panel" hidden>
     <%= link_to "Reset filters", root_path(reset_filters: 1), class: "muted pull-right" %>
     <!-- Moods: checkboxes -->
@@ -62,7 +59,6 @@
     <div><button type="submit">Update list</button></div>
     <% end %>
   </div>
-</fieldset>
 
 <!-- Top items list -->
 <a href="/items"><h2>Items</h2></a>
