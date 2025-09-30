@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function() {
+(function () {
   const sayings = [
     "not a button",
     "again, not a button",
@@ -105,41 +105,81 @@ document.addEventListener("DOMContentLoaded", function() {
 ];
 
 
-  let currentIndex = 0;
+  function csrfToken() {
+    const m = document.querySelector('meta[name="csrf-token"]');
+    return m ? m.content : '';
+  }
 
-  // Load index from backend
-  //fetch('/bubble_index')
-  //  .then(r => r.json())
-  //  .then(data => {
-  //    currentIndex = data.index || 0;
-  //  });
+  function attachWayfinderLogoBubble() {
+    const logo = document.getElementById('wayfinder-logo');
+    if (!logo) return;
 
-  const logo = document.getElementById('wayfinder-logo');
+    // Prevent duplicate bindings across Turbo visits
+    if (logo.dataset.bubbleBound === 'true') return;
+    logo.dataset.bubbleBound = 'true';
 
-  logo.addEventListener('click', () => {
-    const message = sayings[currentIndex % sayings.length];
+    let currentIndex = 0;
 
-    const bubble = document.createElement('div');
-    bubble.textContent = message;
-    bubble.style.position = 'absolute';
-    bubble.style.background = 'black';
-    bubble.style.color = 'white';
-    bubble.style.padding = '5px 8px';
-    bubble.style.borderRadius = '5px';
-    bubble.style.fontSize = '12px';
-    bubble.style.top = (logo.offsetTop - 10) + 'px';
-    bubble.style.left = (logo.offsetLeft + logo.offsetWidth / 2 - 80) + 'px';
-    bubble.style.zIndex = 9999;
-    document.body.appendChild(bubble);
+    // Load saved index once per visit
+    // fetch('/bubble_index', { credentials: 'same-origin' })
+    //   .then(r => r.ok ? r.json() : { index: 0 })
+    //   .then(({ index }) => { currentIndex = index || 0; })
+    //   .catch(() => { /* ignore */ });
 
-    setTimeout(() => bubble.remove(), 3000);
+    logo.addEventListener('click', () => {
+      const msg = sayings[currentIndex % sayings.length];
 
-    // Update index for next click (and save it)
-    currentIndex = (currentIndex + 1) % sayings.length;
-    //fetch('/bubble_index', {
-    //  method: 'POST',
-    //  headers: {'Content-Type': 'application/json'},
-    //  body: JSON.stringify({ index: currentIndex })
-    //});
-  });
-});
+      // Position near the logo in viewport coords; clamp to screen
+      const r = logo.getBoundingClientRect();
+      const bubble = document.createElement('div');
+      bubble.textContent = msg;
+      Object.assign(bubble.style, {
+        position: 'fixed',
+        background: 'black',
+        color: 'white',
+        padding: '5px 8px',
+        borderRadius: '6px',
+        fontSize: '12px',
+        whiteSpace: 'nowrap',
+        pointerEvents: 'none',
+        zIndex: 99999,
+        opacity: '0',
+        transition: 'opacity 120ms ease'
+      });
+
+      document.body.appendChild(bubble);
+
+      const top = Math.max(8, r.top - 28);
+      const left = Math.min(
+        window.innerWidth - bubble.offsetWidth - 8,
+        Math.max(8, r.left + r.width / 2 - bubble.offsetWidth / 2)
+      );
+      bubble.style.top = `${top}px`;
+      bubble.style.left = `${left}px`;
+
+      // fade in
+      requestAnimationFrame(() => { bubble.style.opacity = '1'; });
+
+      setTimeout(() => {
+        bubble.style.opacity = '0';
+        setTimeout(() => bubble.remove(), 150);
+      }, 3000);
+
+      // advance + persist
+       currentIndex = (currentIndex + 1) % sayings.length;
+      // fetch('/bubble_index', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'X-CSRF-Token': csrfToken()
+      //   },
+      //   credentials: 'same-origin',
+      //   body: JSON.stringify({ index: currentIndex })
+      // }).catch(() => { /* ignore */ });
+    });
+  }
+
+  // Works with Turbo and without it
+  document.addEventListener('turbo:load', attachWayfinderLogoBubble);
+  document.addEventListener('DOMContentLoaded', attachWayfinderLogoBubble);
+})();
