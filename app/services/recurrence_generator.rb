@@ -5,7 +5,7 @@ class RecurrenceGenerator
   end
 
   def call
-    return unless @item.recurrence_kind.present? && !@item.recurrence_none?
+    return unless @item.recurrence_kind.present? && !@item.no_recurrence?
 
     next_deadline =
       if @item.fixed_schedule?
