@@ -74,6 +74,10 @@ class ItemsController < ApplicationController
       end
 
       return redirect_to(root_path, notice: messages.join(" "))
+    elsif @item.saved_change_to_done? && !@item.done? && was_done
+      @item.update_column(:completed_at, nil)
+      @item.reactivate_blockers!
+      return redirect_to @item, notice: "Item reactivated."
     end
 
     redirect_to @item, notice: "Item updated."

@@ -8,6 +8,19 @@ class Item < ApplicationRecord
 
   has_many :blocking_edges,      class_name: "ItemBlock", foreign_key: :blocked_id, dependent: :destroy
   has_many :blockers,            through: :blocking_edges, source: :blocker
+  has_many :active_blocking_edges,
+           -> {
+             where(
+               "EXISTS (SELECT 1 FROM items blockers " \
+               "WHERE blockers.id = active_blocking_edges.blocker_id " \
+               "AND blockers.done = FALSE)"
+             )
+           },
+           class_name: "ItemBlock",
+           foreign_key: :blocked_id
+  has_many :unresolved_blockers,
+           through: :active_blocking_edges,
+           source: :blocker
 
   has_many :blocking_out_edges,  class_name: "ItemBlock", foreign_key: :blocker_id, dependent: :destroy
   has_many :blocks,              through: :blocking_out_edges, source: :blocked
@@ -29,7 +42,17 @@ class Item < ApplicationRecord
   end
 
   def ready_now?(inventory_hash:)
-    blockers.none? && missing_materials_by(inventory_hash).empty? && !done?
+    unresolved_blockers.none? && missing_materials_by(inventory_hash).empty? && !done?
+  end
+
+  def reactivate_blockers!(visited_ids = [])
+    return if visited_ids.include?(id)
+    visited_ids << id
+
+    blockers.where(done: true).to_a.each do |blocker|
+      blocker.update_columns(done: false, completed_at: nil)
+      blocker.reactivate_blockers!(visited_ids)
+    end
   end
 
   IMPORTANCE = {

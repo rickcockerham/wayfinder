@@ -20,7 +20,7 @@ class HomeController < ApplicationController
     scope = Item
       .includes(:category, :mood, :material_requirements)
       .where(done: false)
-      .where.missing(:blocking_edges)   # exclude blocked items
+      .where.missing(:active_blocking_edges)   # exclude blocked items with active blockers
 
     scope = scope.where(mood_id: @selected_mood_ids) if @selected_mood_ids.any?
     scope = scope.where(category_id: @selected_category_id) if @selected_category_id.present?
