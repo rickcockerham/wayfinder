@@ -1,2 +1,3 @@
 default_mood:
   name: Default mood
+  user: default_user

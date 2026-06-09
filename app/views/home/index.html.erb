@@ -28,7 +28,7 @@
     <div>
       <strong>Category:</strong><br>
       <%= select_tag :category_id,
-          options_from_collection_for_select(Category.order(:name), :id, :name, @filters[:category_id]),
+          options_from_collection_for_select(@categories, :id, :name, @filters[:category_id]),
           include_blank: "All categories" %>
     </div>
 
@@ -71,7 +71,6 @@
       </tr>
     </thead>
     <tbody>
-      <% inv = InventoryItem.all.index_by { |i| i.name.downcase } %>
       <% @top_items.each do |it| %>
       <% missing = @missing_by_item[it.id] || [] %>
       <tr id="<%= dom_id(it) %>">

@@ -71,8 +71,15 @@ module FilterPersistence
   end
 
   def sanity(f)
-    f[:mood_ids] ||= Mood.pluck(:id)
-    f[:category_id] ||= nil
+    allowed_mood_ids = Mood.for_user(current_user).pluck(:id)
+    f[:mood_ids] = if f[:mood_ids].present?
+      Array(f[:mood_ids]).map(&:to_i) & allowed_mood_ids
+    else
+      allowed_mood_ids
+    end
+
+    category_id = f[:category_id].presence&.to_i
+    f[:category_id] = Category.for_user(current_user).exists?(id: category_id) ? category_id : nil
     #f[:minutes] = f[:minutes].to_i
     #f[:minutes] = MAX_MINUTES if f[:minutes] <= 0 || f[:minutes] > MAX_MINUTES
     # time_i: clamp to 0..7, default 7 (Forever)
@@ -85,7 +92,7 @@ module FilterPersistence
 
   def default_filters
     {
-      mood_ids: Mood.pluck(:id),                 # all moods
+      mood_ids: Mood.for_user(current_user).pluck(:id),                 # all moods
       category_id: active_category_for_now&.id,  # ← planner drives default
       time_i: 7,
       #minutes: MAX_MINUTES,
@@ -110,11 +117,11 @@ module FilterPersistence
     return nil unless part
     today = (Time.zone || Time).now.to_date
 
-    ScheduleEntry.where(on_date: today, day_part: part)
+    ScheduleEntry.for_user(current_user).where(on_date: today, day_part: part)
       .includes(:category)
       .order(updated_at: :desc)   # if multiple, the last one you touched “wins”
       .limit(1)
       .pick(:category_id)
-      &.then { |id| Category.find_by(id: id) }
+      &.then { |id| Category.for_user(current_user).find_by(id: id) }
   end
 end

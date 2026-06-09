@@ -1,5 +1,6 @@
 # app/models/item.rb
 class Item < ApplicationRecord
+  belongs_to :user
   belongs_to :category
   belongs_to :mood
 
@@ -10,11 +11,7 @@ class Item < ApplicationRecord
   has_many :blockers,            through: :blocking_edges, source: :blocker
   has_many :active_blocking_edges,
            -> {
-             where(
-               "EXISTS (SELECT 1 FROM items blockers " \
-               "WHERE blockers.id = active_blocking_edges.blocker_id " \
-               "AND blockers.done = FALSE)"
-             )
+             joins(:blocker).where(items: { done: false })
            },
            class_name: "ItemBlock",
            foreign_key: :blocked_id
@@ -30,6 +27,9 @@ class Item < ApplicationRecord
   has_many :reserved_inventory_items, through: :item_inventories, source: :inventory_item
 
   validates :title, presence: true
+  validate :category_belongs_to_user
+  validate :mood_belongs_to_user
+  validate :parent_belongs_to_user
 
   DEFAULT_ESTIMATE = 30.freeze
 
@@ -146,12 +146,30 @@ class Item < ApplicationRecord
     )
   }
 
+  scope :without_active_blockers, -> {
+    false_value = connection.quote(false)
+
+    where(<<~SQL.squish)
+      NOT EXISTS (
+        SELECT 1
+        FROM #{ItemBlock.quoted_table_name}
+        INNER JOIN #{quoted_table_name} active_blockers
+          ON active_blockers.id = #{ItemBlock.quoted_table_name}.blocker_id
+        WHERE #{ItemBlock.quoted_table_name}.blocked_id = #{quoted_table_name}.id
+          AND #{ItemBlock.quoted_table_name}.user_id = #{quoted_table_name}.user_id
+          AND active_blockers.user_id = #{quoted_table_name}.user_id
+          AND active_blockers.done = #{false_value}
+      )
+    SQL
+  }
+
   enum recurrence_kind: { no_recurrence: 0, fixed_schedule: 1, after_completion: 2 }
   enum recurrence_unit: { day: 0, week: 1, month: 2, year: 3 }
 
   # ...existing associations/validations...
 
   # Set initial deadline to start date if given and no deadline yet
+  before_validation :inherit_user_from_associations
   before_validation :apply_recurrence_start_to_deadline, on: :create
 
   validates :recurrence_interval, numericality: { greater_than_or_equal_to: 1 }
@@ -169,6 +187,22 @@ class Item < ApplicationRecord
   def apply_recurrence_start_to_deadline
     return if deadline.present?
     self.deadline = recurrence_start_on if recurrence_start_on.present?
+  end
+
+  def inherit_user_from_associations
+    self.user ||= category&.user || mood&.user || parent&.user
+  end
+
+  def category_belongs_to_user
+    validate_associated_user(:category)
+  end
+
+  def mood_belongs_to_user
+    validate_associated_user(:mood)
+  end
+
+  def parent_belongs_to_user
+    validate_associated_user(:parent)
   end
 
   # === Recurrence calculators ===

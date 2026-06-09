@@ -1,9 +1,10 @@
 # app/controllers/inventory_items_controller.rb
 class InventoryItemsController < ApplicationController
   before_action :set_inventory_item, only: %i[show edit update destroy]
+  before_action :load_form_collections, only: %i[new edit create update]
 
   def index
-    @inventory_items = InventoryItem.includes(:location).order(:name)
+    @inventory_items = InventoryItem.for_user(current_user).includes(:location).order(:name)
     if !params[:zeros]
       @inventory_items = @inventory_items.where("qty_have > 0")
     end
@@ -12,13 +13,13 @@ class InventoryItemsController < ApplicationController
   def show; end
 
   def new
-    @inventory_item = InventoryItem.new
+    @inventory_item = current_user.inventory_items.new
   end
 
   def edit; end
 
   def create
-    @inventory_item = InventoryItem.new(inventory_item_params)
+    @inventory_item = current_user.inventory_items.new(inventory_item_params)
     if @inventory_item.save
       redirect_to inventory_items_path, notice: "Inventory item created."
     else
@@ -41,10 +42,15 @@ class InventoryItemsController < ApplicationController
 
   private
   def set_inventory_item
-    @inventory_item = InventoryItem.find(params[:id])
+    @inventory_item = InventoryItem.for_user(current_user).find(params[:id])
   end
 
   def inventory_item_params
     params.require(:inventory_item).permit(:name, :qty_have, :unit, :location_id, :shop_id)
+  end
+
+  def load_form_collections
+    @locations = Location.for_user(current_user).order(:name).to_a
+    @shops = Shop.for_user(current_user).order(:name).to_a
   end
 end

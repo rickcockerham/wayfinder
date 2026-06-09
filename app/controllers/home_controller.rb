@@ -17,10 +17,10 @@ class HomeController < ApplicationController
     @filters = f
 
     # --- base scope ---
-    scope = Item
+    scope = Item.for_user(current_user)
       .includes(:category, :mood, :material_requirements)
       .where(done: false)
-      .where.missing(:active_blocking_edges)   # exclude blocked items with active blockers
+      .without_active_blockers
 
     scope = scope.where(mood_id: @selected_mood_ids) if @selected_mood_ids.any?
     scope = scope.where(category_id: @selected_category_id) if @selected_category_id.present?
@@ -36,7 +36,7 @@ class HomeController < ApplicationController
     @top_items = @items.first(@per)
 
     # --- per-item missing list for the table ---
-    inv = InventoryItem.all.index_by { |i| i.name.downcase }
+    inv = InventoryItem.for_user(current_user).index_by { |i| i.name.downcase }
     @missing_by_item = {}
     @top_items.each { |it| @missing_by_item[it.id] = it.missing_materials_by(inv) }
 
@@ -51,9 +51,9 @@ class HomeController < ApplicationController
   private
 
   def load_lookups
-    @moods      = Mood.order(:name).to_a
-    @categories = Category.order(:name).to_a
-    @shops      = Shop.order(:name).to_a
+    @moods      = Mood.for_user(current_user).order(:name).to_a
+    @categories = Category.for_user(current_user).order(:name).to_a
+    @shops      = Shop.for_user(current_user).order(:name).to_a
   end
 
 

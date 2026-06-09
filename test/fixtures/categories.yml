@@ -1,2 +1,3 @@
 default_category:
   name: Default category
+  user: default_user

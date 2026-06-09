@@ -12,7 +12,7 @@
     </tr>
   </thead>
   <tbody>
-    <% inv = InventoryItem.all.index_by { |i| i.name.downcase } %>
+    <% inv = @inventory_by_name || {} %>
     <% @items.each do |it| %>
     <% missing = it.missing_materials_by(inv) %>
     <% blks = it.blockers.to_a %>

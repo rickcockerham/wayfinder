@@ -2,7 +2,9 @@ require "test_helper"
 
 class ItemsControllerTest < ActionDispatch::IntegrationTest
   setup do
+    @user = users(:default_user)
     @item = items(:one)
+    post login_url, params: { key: @user.access_key }
   end
 
   test "should get index" do
@@ -17,10 +19,17 @@ class ItemsControllerTest < ActionDispatch::IntegrationTest
 
   test "should create item" do
     assert_difference("Item.count") do
-      post items_url, params: { item: {  } }
+      post items_url, params: {
+        item: {
+          title: "Created item",
+          category_id: categories(:default_category).id,
+          mood_id: moods(:default_mood).id
+        }
+      }
     end
 
-    assert_redirected_to item_url(Item.last)
+    assert_redirected_to items_url
+    assert_equal @user, Item.last.user
   end
 
   test "should show item" do
@@ -34,7 +43,7 @@ class ItemsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should update item" do
-    patch item_url(@item), params: { item: {  } }
+    patch item_url(@item), params: { item: { title: "Updated item" } }
     assert_redirected_to item_url(@item)
   end
 

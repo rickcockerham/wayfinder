@@ -3,14 +3,14 @@ class CategoriesController < ApplicationController
   before_action :set_category, only: %i[show edit update destroy]
 
   def index
-    @categories = Category.order(:name)
+    @categories = Category.for_user(current_user).order(:name)
   end
   def show; end
-  def new; @category = Category.new; end
+  def new; @category = current_user.categories.new; end
   def edit; end
 
   def create
-    @category = Category.new(category_params)
+    @category = current_user.categories.new(category_params)
     if @category.save
       redirect_to categories_path, notice: "Category created."
     else
@@ -32,6 +32,6 @@ class CategoriesController < ApplicationController
   end
 
   private
-  def set_category; @category = Category.find(params[:id]); end
+  def set_category; @category = Category.for_user(current_user).find(params[:id]); end
   def category_params; params.require(:category).permit(:name); end
 end

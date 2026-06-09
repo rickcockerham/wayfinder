@@ -1,21 +1,22 @@
 # app/controllers/material_requirements_controller.rb
 class MaterialRequirementsController < ApplicationController
   before_action :set_material_requirement, only: %i[show edit update destroy]
+  before_action :load_form_collections, only: %i[new edit create update]
 
   def index
-    @material_requirements = MaterialRequirement.includes(:item, :shop).order(created_at: :desc)
+    @material_requirements = MaterialRequirement.for_user(current_user).includes(:item, :shop).order(created_at: :desc)
   end
 
   def show; end
 
   def new
-    @material_requirement = MaterialRequirement.new(item_id: params[:item_id])
+    @material_requirement = current_user.material_requirements.new(item_id: owned_item_id(params[:item_id]))
   end
 
   def edit; end
 
   def create
-    @material_requirement = MaterialRequirement.new(material_requirement_params)
+    @material_requirement = current_user.material_requirements.new(material_requirement_params)
     if @material_requirement.save
       redirect_to material_requirements_path, notice: "Material requirement created."
     else
@@ -43,11 +44,20 @@ class MaterialRequirementsController < ApplicationController
 
   private
   def set_material_requirement
-    @material_requirement = MaterialRequirement.find(params[:id])
+    @material_requirement = MaterialRequirement.for_user(current_user).find(params[:id])
     @item = @material_requirement.item rescue nil
   end
 
   def material_requirement_params
     params.require(:material_requirement).permit(:item_id, :name, :qty_needed, :unit, :shop_id)
+  end
+
+  def load_form_collections
+    @items = Item.for_user(current_user).order(:title).to_a
+    @shops = Shop.for_user(current_user).order(:name).to_a
+  end
+
+  def owned_item_id(id)
+    Item.for_user(current_user).find_by(id: id)&.id
   end
 end

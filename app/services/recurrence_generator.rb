@@ -26,7 +26,7 @@ class RecurrenceGenerator
 
     # Optional: copy materials requirements
     @item.material_requirements.find_each do |mr|
-      dup.material_requirements.create!(name: mr.name, qty_needed: mr.qty_needed, unit: mr.unit, shop_id: mr.shop_id)
+      dup.material_requirements.create!(user: dup.user, name: mr.name, qty_needed: mr.qty_needed, unit: mr.unit, shop_id: mr.shop_id)
     end
 
     dup

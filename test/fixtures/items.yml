@@ -1,5 +1,6 @@
 one:
   title: Default item
+  user: default_user
   category: default_category
   mood: default_mood
   done: false

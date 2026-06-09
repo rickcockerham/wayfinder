@@ -4,17 +4,18 @@ class ScheduleEntriesController < ApplicationController
   before_action :set_week
 
   def index
-    @categories = Category.order(:name).to_a
-    @entries    = ScheduleEntry.where(on_date: @week).includes(:category).to_a
+    @categories = Category.for_user(current_user).order(:name).to_a
+    @entries    = ScheduleEntry.for_user(current_user).where(on_date: @week).includes(:category).to_a
     @by_slot    = @entries.group_by { |e| [e.on_date, e.day_part] }
   end
 
   def create
     on_date   = Date.parse(params[:on_date])
     day_part  = params[:day_part].to_s
-    category  = Category.find(params[:category_id])
+    category  = Category.for_user(current_user).find(params[:category_id])
 
-    entry = ScheduleEntry.find_or_initialize_by(on_date:, day_part:, category:)
+    entry = ScheduleEntry.for_user(current_user).find_or_initialize_by(on_date:, day_part:, category:)
+    entry.user = current_user
     entry.save!
 
     render_slot(on_date, day_part)
@@ -25,7 +26,7 @@ class ScheduleEntriesController < ApplicationController
   end
 
   def destroy
-    entry = ScheduleEntry.find(params[:id])
+    entry = ScheduleEntry.for_user(current_user).find(params[:id])
     on_date  = entry.on_date
     day_part = entry.day_part
     entry.destroy
@@ -38,7 +39,7 @@ class ScheduleEntriesController < ApplicationController
     on_date  = Date.parse(params[:on_date])
     day_part = params[:day_part].to_s
 
-    ScheduleEntry.where(on_date:, day_part:).delete_all
+    ScheduleEntry.for_user(current_user).where(on_date:, day_part:).delete_all
     render_slot(on_date, day_part)
   end
 
@@ -50,7 +51,7 @@ class ScheduleEntriesController < ApplicationController
   end
 
   def render_slot(on_date, day_part)
-    entries = ScheduleEntry.where(on_date:, day_part:).includes(:category).order("categories.name")
+    entries = ScheduleEntry.for_user(current_user).where(on_date:, day_part:).joins(:category).includes(:category).order("categories.name")
     render turbo_stream: turbo_stream.replace(
       slot_dom_id(on_date, day_part),
       partial: "schedule_entries/slot",

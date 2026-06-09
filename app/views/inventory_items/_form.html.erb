@@ -6,10 +6,10 @@
   <p>Name<br><%= f.text_field :name, required: true %></p>
   <p>Qty have<br><%= f.number_field :qty_have, step: 0.01, min: 0 %></p>
   <p>Location<br>
-    <%= f.collection_select :location_id, Location.order(:name), :id, :name, include_blank: true %>
+    <%= f.collection_select :location_id, @locations, :id, :name, include_blank: true %>
   </p>
    <p>Default Vendor<br>
-    <%= f.collection_select :shop_id, Shop.order(:name), :id, :name %>
+    <%= f.collection_select :shop_id, @shops, :id, :name %>
   </p>
   <p><%= f.submit %></p>
 <% end %>
