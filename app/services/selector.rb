@@ -18,7 +18,7 @@ class Selector
   def call
     inv = InventoryItem.for_user(@user).includes(:location).index_by { |i| i.name.downcase }
 
-    scope = Item.for_user(@user).includes(:category, :mood, :blockers, :material_requirements).where(done: false)
+    scope = Item.for_user(@user).includes(:category, :mood, :blockers, :material_requirements).where(done: false).visible_on_list
     scope = scope.joins(:category).where(categories: { name: @category }) if @category.present?
     scope = scope.where("time_estimate_minutes <= ?", (@hours * 60)) if @hours
     scope = scope.where(@quick ? ["time_estimate_minutes <= ?", 90] : ["time_estimate_minutes > 0"])

@@ -27,4 +27,33 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, active_blocker.title
     refute_includes @response.body, blocked_by_active.title
   end
+
+  test "hides items until they are within hide_days of deadline" do
+    category = categories(:default_category)
+    mood = moods(:default_mood)
+
+    hidden_until_due_window = @user.items.create!(
+      title: "Dog appointment",
+      category: category,
+      mood: mood,
+      done: false,
+      deadline: Date.current + 1.day,
+      hide_days: 1
+    )
+
+    visible_in_due_window = @user.items.create!(
+      title: "Weekly reminder",
+      category: category,
+      mood: mood,
+      done: false,
+      deadline: Date.current,
+      hide_days: 1
+    )
+
+    get root_url, params: { per: 100 }
+
+    assert_response :success
+    refute_includes @response.body, hidden_until_due_window.title
+    assert_includes @response.body, visible_in_due_window.title
+  end
 end

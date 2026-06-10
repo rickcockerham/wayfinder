@@ -27,6 +27,7 @@ class Item < ApplicationRecord
   has_many :reserved_inventory_items, through: :item_inventories, source: :inventory_item
 
   validates :title, presence: true
+  validates :hide_days, numericality: { greater_than_or_equal_to: 0 }
   validate :category_belongs_to_user
   validate :mood_belongs_to_user
   validate :parent_belongs_to_user
@@ -163,14 +164,18 @@ class Item < ApplicationRecord
     SQL
   }
 
+  scope :visible_on_list, ->(today: Date.current) {
+    t = table_name
+    where(
+      "#{t}.deadline IS NULL OR DATEDIFF(#{t}.deadline, ?) < COALESCE(#{t}.hide_days, 0)",
+      today
+    )
+  }
+
   enum recurrence_kind: { no_recurrence: 0, fixed_schedule: 1, after_completion: 2 }
   enum recurrence_unit: { day: 0, week: 1, month: 2, year: 3 }
 
-  # ...existing associations/validations...
-
-  # Set initial deadline to start date if given and no deadline yet
   before_validation :inherit_user_from_associations
-  before_validation :apply_recurrence_start_to_deadline, on: :create
 
   validates :recurrence_interval, numericality: { greater_than_or_equal_to: 1 }
   validates :recurrence_day_of_month, inclusion: { in: 1..31 }, allow_nil: true
@@ -182,11 +187,6 @@ class Item < ApplicationRecord
     if recurrence_unit == "year" && recurrence_month_of_year.present? ^ recurrence_day_of_month.present?
       errors.add(:base, "Both month_of_year and day_of_month must be set for a specific yearly date")
     end
-  end
-
-  def apply_recurrence_start_to_deadline
-    return if deadline.present?
-    self.deadline = recurrence_start_on if recurrence_start_on.present?
   end
 
   def inherit_user_from_associations
@@ -205,11 +205,33 @@ class Item < ApplicationRecord
     validate_associated_user(:parent)
   end
 
+  def recurrence_schedule_description
+    return nil if no_recurrence?
+
+    interval = recurrence_interval.to_i
+    unit = interval == 1 ? recurrence_unit : recurrence_unit.pluralize
+    description = "Every #{interval} #{unit}"
+
+    if recurrence_unit == "month" && recurrence_day_of_month.present?
+      description += " on day #{recurrence_day_of_month}"
+    elsif recurrence_unit == "year" && recurrence_month_of_year.present? && recurrence_day_of_month.present?
+      description += " on #{Date::MONTHNAMES[recurrence_month_of_year]} #{recurrence_day_of_month}"
+    end
+
+    "#{description}."
+  end
+
+  def visible_on_list?(today: Date.current)
+    return true if deadline.blank?
+
+    (deadline - today).to_i < hide_days.to_i
+  end
+
   # === Recurrence calculators ===
 
   # For Type 1 (fixed_schedule): schedule strictly by the prior scheduled deadline
   def next_deadline_from_schedule
-    base = (deadline || recurrence_start_on)
+    base = deadline
     return nil if base.nil? || no_recurrence?
     RecurrenceRules.next_occurrence(
       unit: recurrence_unit.to_sym,

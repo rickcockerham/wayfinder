@@ -20,6 +20,7 @@ class HomeController < ApplicationController
     scope = Item.for_user(current_user)
       .includes(:category, :mood, :material_requirements)
       .where(done: false)
+      .visible_on_list
       .without_active_blockers
 
     scope = scope.where(mood_id: @selected_mood_ids) if @selected_mood_ids.any?

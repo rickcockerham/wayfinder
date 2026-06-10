@@ -45,6 +45,7 @@
 
   <p>Cost (cents) <%= f.number_field :cost_cents, min: 0, step: 1 %></p>
   <p>Deadline <%= f.date_field :deadline %></p>
+  <p>Hide until days before deadline <%= f.number_field :hide_days, min: 0, step: 1 %></p>
   <p>Done <%= f.check_box :done %></p>
 
 
@@ -59,7 +60,7 @@
             ["None", "no_recurrence"],
             ["Fixed schedule (keep calendar cadence)", "fixed_schedule"],
             ["After completion (push from when finished)", "after_completion"]
-          ], f.object.recurrence_kind || "none"),
+          ], f.object.recurrence_kind || "no_recurrence"),
           {}, class: "w-full" %>
     </div>
 
@@ -78,11 +79,6 @@
     <div>
       <label for="item_recurrence_interval">Every</label>
       <%= f.number_field :recurrence_interval, min: 1, step: 1, value: (f.object.recurrence_interval.presence || 1), class: "w-full" %>
-    </div>
-
-    <div>
-      <label for="item_recurrence_start_on">Start date (first deadline)</label>
-      <%= f.date_field :recurrence_start_on, class: "w-full" %>
     </div>
 
     <!-- Conditional fields (shown by JS when needed) -->

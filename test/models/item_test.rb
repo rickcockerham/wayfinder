@@ -54,4 +54,57 @@ class ItemTest < ActiveSupport::TestCase
     assert_not blocker.reload.done?
     assert_nil blocker.reload.completed_at
   end
+
+  test "fixed recurrence advances from deadline" do
+    user = User.create!(name: "Test", access_key: "item-test-recurrence")
+    category = user.categories.create!(name: "Test")
+    mood = user.moods.create!(name: "Test")
+
+    item = user.items.create!(
+      title: "Pay bill",
+      category: category,
+      mood: mood,
+      deadline: Date.new(2026, 6, 9),
+      recurrence_kind: :fixed_schedule,
+      recurrence_unit: :week,
+      recurrence_interval: 2
+    )
+
+    assert_equal Date.new(2026, 6, 23), item.next_deadline_from_schedule
+  end
+
+  test "recurrence schedule description uses interval and unit" do
+    user = User.create!(name: "Test", access_key: "item-test-recurrence-description")
+    category = user.categories.create!(name: "Test")
+    mood = user.moods.create!(name: "Test")
+
+    item = user.items.create!(
+      title: "Pay bill",
+      category: category,
+      mood: mood,
+      recurrence_kind: :fixed_schedule,
+      recurrence_unit: :week,
+      recurrence_interval: 1
+    )
+
+    assert_equal "Every 1 week.", item.recurrence_schedule_description
+  end
+
+  test "visible_on_list? hides future items until within hide_days window" do
+    user = User.create!(name: "Test", access_key: "item-test-hide-days")
+    category = user.categories.create!(name: "Test")
+    mood = user.moods.create!(name: "Test")
+
+    item = user.items.create!(
+      title: "Dog appointment",
+      category: category,
+      mood: mood,
+      deadline: Date.new(2026, 6, 20),
+      hide_days: 6
+    )
+
+    assert_not item.visible_on_list?(today: Date.new(2026, 6, 10))
+    assert item.visible_on_list?(today: Date.new(2026, 6, 15))
+    assert item.visible_on_list?(today: Date.new(2026, 6, 21))
+  end
 end

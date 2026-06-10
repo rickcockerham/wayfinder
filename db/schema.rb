@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_08_000001) do
+ActiveRecord::Schema[7.1].define(version: 2026_06_09_000001) do
   create_table "categories", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.datetime "created_at", null: false
@@ -78,9 +78,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_08_000001) do
     t.integer "recurrence_interval", default: 1, null: false
     t.integer "recurrence_day_of_month"
     t.integer "recurrence_month_of_year"
-    t.date "recurrence_start_on"
     t.datetime "completed_at"
     t.bigint "user_id", null: false
+    t.integer "hide_days", default: 0, null: false
     t.index ["category_id"], name: "index_items_on_category_id"
     t.index ["deadline"], name: "index_items_on_deadline"
     t.index ["done"], name: "index_items_on_done"

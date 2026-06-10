@@ -9,9 +9,7 @@ class ItemsController < ApplicationController
 
     scope = Item.for_user(current_user)
     scope = scope.where(category_id: f[:category_id]) if f[:category_id].present?
-    if !params[:dones]
-      scope = scope.where(done: false)
-    end
+    scope = scope.where(done: params[:dones].present?)
     scope = scope.where(mood_id: f[:mood_ids]) if f[:mood_ids].present?
 
     items  = scope.includes(:material_requirements, :blockers, :blocks).to_a
@@ -67,12 +65,12 @@ class ItemsController < ApplicationController
         messages << "Material consumption failed: #{e.message}."
       end
 
-      # 2) Generate next recurrence (if any)
+      # 2) Advance this recurring item to its next deadline (if any)
       begin
-        next_item = RecurrenceGenerator.new(@item).call
+        next_item = RecurrenceAdvancer.new(@item).call
         messages << "Next occurrence scheduled for #{next_item.deadline}." if next_item
       rescue => e
-        messages << "Next occurrence could not be created: #{e.message}."
+        messages << "Next occurrence could not be scheduled: #{e.message}."
       end
 
       return redirect_to(root_path, notice: messages.join(" "))
@@ -179,10 +177,9 @@ class ItemsController < ApplicationController
     params.require(:item).permit(
       :title, :notes, :category_id, :mood_id,
       :personal_impact, :emotional_impact, :family_impact,
-      :time_estimate_minutes, :cost_cents, :deadline, :done, :parent_id,
-      # NEW recurrence fields
+      :time_estimate_minutes, :cost_cents, :deadline, :hide_days, :done, :parent_id,
       :recurrence_kind, :recurrence_unit, :recurrence_interval,
-      :recurrence_day_of_month, :recurrence_month_of_year, :recurrence_start_on
+      :recurrence_day_of_month, :recurrence_month_of_year
     )
   end
 
