@@ -1,4 +1,6 @@
 <%= link_to 'Home', root_path %>
+<p>Drag-drop.  Double click to remove.</p>
+<p>This will auto filter items to the category in these time slots</p>
 <!-- Categories palette -->
 <div class="card" style="margin-bottom:1rem">
   <h3 style="margin-top:0">Categories</h3>
@@ -7,6 +9,8 @@
       <span class="cat-chip"
             draggable="true"
             data-cat-id="<%= cat.id %>"
+            role="button"
+            tabindex="0"
             title="Drag me into a slot">
         <%= cat.name %>
       </span>
@@ -16,7 +20,7 @@
 
 <!-- Planner grid -->
 <div id="planner" data-controller="planner-dnd">
-  <table class="items-table">
+  <table class="items-table planner-table">
     <thead>
       <tr>
         <th>Time</th>
@@ -26,9 +30,10 @@
       </tr>
     </thead>
     <tbody>
-      <% ["morning","afternoon","evening"].each do |part| %>
+      <% @planner_slots.each do |slot| %>
+        <% part = slot[:key] %>
         <tr>
-          <td data-label="Time" class="muted"><%= part.capitalize %></td>
+          <td data-label="Time" class="muted"><%= slot[:full_label] %></td>
 
           <% @week.each do |d| %>
             <% entries = @by_slot[[d, part]] || [] %>
@@ -44,4 +49,37 @@
       <% end %>
     </tbody>
   </table>
+
+  <div class="planner-mobile">
+    <% @week.each do |d| %>
+      <section class="planner-day-card">
+        <h3><%= d.strftime("%a %b %-d") %></h3>
+
+        <% @planner_slots.each do |slot| %>
+          <% part = slot[:key] %>
+          <% entries = @by_slot[[d, part]] || [] %>
+          <div class="planner-mobile-slot">
+            <div class="planner-mobile-slot-label"><%= slot[:label] %></div>
+            <turbo-frame id="slot-<%= d.strftime('%Y%m%d') %>-<%= part %>">
+              <%= render partial: "slot", locals: { on_date: d, day_part: part, entries: entries, error: nil } %>
+            </turbo-frame>
+          </div>
+        <% end %>
+      </section>
+    <% end %>
+  </div>
 </div>
+
+<dialog id="planner-category-picker" class="planner-picker">
+  <form method="dialog" class="planner-picker-card">
+    <div class="planner-picker-header">
+      <h3>Choose Category</h3>
+      <button type="submit" class="planner-picker-close" value="cancel">Close</button>
+    </div>
+    <div class="planner-picker-list">
+      <% @categories.each do |cat| %>
+        <button type="button" class="planner-picker-option" data-cat-id="<%= cat.id %>"><%= cat.name %></button>
+      <% end %>
+    </div>
+  </form>
+</dialog>

@@ -2,37 +2,37 @@
 class ItemsController < ApplicationController
   include FilterPersistence
   before_action :set_item, only: %i[show edit update destroy materials materials_post]
+  before_action :load_form_collections, only: %i[new edit create update]
 
   def index
     f = current_filters
 
-    scope = Item
+    scope = Item.for_user(current_user)
     scope = scope.where(category_id: f[:category_id]) if f[:category_id].present?
-    if !params[:dones]
-      scope = scope.where(done: false)
-    end
-    scope = scope.where(mood_id: f[:moods]) if f[:moods].present?
+    scope = scope.where(done: params[:dones].present?)
+    scope = scope.where(mood_id: f[:mood_ids]) if f[:mood_ids].present?
 
     items  = scope.includes(:material_requirements, :blockers, :blocks).to_a
     scores = MaxCascadeImportance.new(items).call
     @items = DependencyOrder.new(items, importance_map: scores).call
+    @inventory_by_name = InventoryItem.for_user(current_user).index_by { |i| i.name.downcase }
     @filters = f
   end
 
   def show
-    @blocking_edges = ItemBlock.where(blocked_id: @item.id).includes(:blocker)
-    @blocks_out = ItemBlock.where(blocker_id: @item.id).includes(:blocked)
+    @blocking_edges = ItemBlock.for_user(current_user).where(blocked_id: @item.id).includes(:blocker)
+    @blocks_out = ItemBlock.for_user(current_user).where(blocker_id: @item.id).includes(:blocked)
   end
 
   def new
-    @item = Item.new
-    @item.parent_id ||= params[:parent_id]
+    @item = current_user.items.new
+    @item.parent_id ||= owned_item_id(params[:parent_id])
   end
 
   def edit; end
 
   def create
-    @item = Item.new(item_params)
+    @item = current_user.items.new(item_params)
     if @item.save
       redirect_to items_path, notice: "Item was successfully created."
     else
@@ -65,15 +65,19 @@ class ItemsController < ApplicationController
         messages << "Material consumption failed: #{e.message}."
       end
 
-      # 2) Generate next recurrence (if any)
+      # 2) Advance this recurring item to its next deadline (if any)
       begin
-        next_item = RecurrenceGenerator.new(@item).call
+        next_item = RecurrenceAdvancer.new(@item).call
         messages << "Next occurrence scheduled for #{next_item.deadline}." if next_item
       rescue => e
-        messages << "Next occurrence could not be created: #{e.message}."
+        messages << "Next occurrence could not be scheduled: #{e.message}."
       end
 
       return redirect_to(root_path, notice: messages.join(" "))
+    elsif @item.saved_change_to_done? && !@item.done? && was_done
+      @item.update_column(:completed_at, nil)
+      @item.reactivate_blockers!
+      return redirect_to @item, notice: "Item reactivated."
     end
 
     redirect_to @item, notice: "Item updated."
@@ -92,7 +96,7 @@ class ItemsController < ApplicationController
     @page  = [params[:page].to_i, 1].max
     @per   = 25
 
-    scope = InventoryItem.order(:name)
+    scope = InventoryItem.for_user(current_user).order(:name)
     scope = scope.where("LOWER(name) LIKE ?", "%#{@q.downcase}%") if @q.present?
 
     @total = scope.count
@@ -101,20 +105,20 @@ class ItemsController < ApplicationController
 
     @req_by_downcase = @item.material_requirements.index_by { |mr| mr.name.downcase }
 
-    @shops   = Shop.order(:name).to_a
     @shop_id = params[:shop_id].presence&.to_i
+    @shops   = visible_records(Shop.for_user(current_user), current_id: @shop_id)
   end
 
   def materials_post
     @shop_id = params[:shop_id].presence&.to_i
-    shop     = @shop_id ? Shop.find_by(id: @shop_id) : nil
+    shop     = @shop_id ? Shop.for_user(current_user).find_by(id: @shop_id) : nil
     created_or_updated = 0
 
     # From table rows (InventoryItem catalog)
     (params[:quantities] || {}).each do |inv_id, qty|
       qty_i = qty.to_i
       next if qty_i <= 0
-      inv = InventoryItem.find_by(id: inv_id)
+      inv = InventoryItem.for_user(current_user).find_by(id: inv_id)
       next unless inv
       effective_shop = shop || inv.shop
       upsert_requirement!(@item, inv.name, qty_i, inv.unit, effective_shop)
@@ -129,8 +133,8 @@ class ItemsController < ApplicationController
       name = name.to_s.strip
       qty_i = qty.to_i
       next if name.blank? || qty_i <= 0
-      explicit_shop = explicit_shop_id.present? ? Shop.find_by(id: explicit_shop_id) : sho
-      upsert_requirement!(@item, name, qty_i, "", shop)
+      explicit_shop = explicit_shop_id.present? ? Shop.for_user(current_user).find_by(id: explicit_shop_id) : nil
+      upsert_requirement!(@item, name, qty_i, "", explicit_shop || shop)
       created_or_updated += 1
     end
 
@@ -150,24 +154,32 @@ class ItemsController < ApplicationController
       mr.update!(attrs)
     else
       item.material_requirements.create!(
-        name: name, qty_needed: qty, unit: unit.to_s, shop: shop
+        user: item.user, name: name, qty_needed: qty, unit: unit.to_s, shop: shop
       )
     end
   end
 
   def set_item
-    @item = Item.find(params[:id])
+    @item = Item.for_user(current_user).find(params[:id])
     @material_requirements = @item.material_requirements.includes(:shop) if @item
+  end
+
+  def load_form_collections
+    @categories = visible_records(Category.for_user(current_user), current_id: @item&.category_id)
+    @moods = visible_records(Mood.for_user(current_user), current_id: @item&.mood_id)
+  end
+
+  def owned_item_id(id)
+    Item.for_user(current_user).find_by(id: id)&.id
   end
 
   def item_params
     params.require(:item).permit(
       :title, :notes, :category_id, :mood_id,
       :personal_impact, :emotional_impact, :family_impact,
-      :time_estimate_minutes, :cost_cents, :deadline, :done, :parent_id,
-      # NEW recurrence fields
+      :time_scale, :cost_cents, :deadline, :hide_days, :done, :parent_id,
       :recurrence_kind, :recurrence_unit, :recurrence_interval,
-      :recurrence_day_of_month, :recurrence_month_of_year, :recurrence_start_on
+      :recurrence_day_of_month, :recurrence_month_of_year
     )
   end
 

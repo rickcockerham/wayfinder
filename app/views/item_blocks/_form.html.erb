@@ -4,10 +4,10 @@
     <div style="color:red"><%= item_block.errors.full_messages.to_sentence %></div>
   <% end %>
   <p>Blocker<br>
-    <%= f.collection_select :blocker_id, Item.order(:title), :id, :title, include_blank: false %>
+    <%= f.collection_select :blocker_id, @items, :id, :title, include_blank: false %>
   </p>
   <p>Blocked<br>
-    <%= f.collection_select :blocked_id, Item.order(:title), :id, :title, include_blank: false %>
+    <%= f.collection_select :blocked_id, @items, :id, :title, include_blank: false %>
   </p>
   <p><%= f.submit %></p>
 <% end %>

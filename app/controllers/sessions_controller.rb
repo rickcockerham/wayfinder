@@ -7,7 +7,8 @@ class SessionsController < ApplicationController
   def create
     key = params[:key].to_s
     if SimpleAuth.valid_key?(key)
-      SimpleAuth.set_cookie!(cookies)
+      user = SimpleAuth.user_for_key(key)
+      SimpleAuth.set_cookie!(cookies, user)
       redirect_to(root_path, notice: "Signed in.")
     else
       flash.now[:alert] = "Invalid key."

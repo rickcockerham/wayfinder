@@ -1,6 +1,9 @@
   # app/controllers/application_controller.rb
 class ApplicationController < ActionController::Base
   before_action :require_authentication
+  before_action :set_current_user
+
+  helper_method :current_user
 
   private
 
@@ -10,7 +13,8 @@ class ApplicationController < ActionController::Base
     # Auto-login via ?key=... (clean the URL immediately to avoid leaking in referers)
     if params[:key].present?
       if SimpleAuth.valid_key?(params[:key])
-        SimpleAuth.set_cookie!(cookies)
+        user = SimpleAuth.user_for_key(params[:key])
+        SimpleAuth.set_cookie!(cookies, user)
         # Redirect to same path without the key param
         return redirect_to url_for(params.permit!.to_h.except(:key))
       else
@@ -21,5 +25,21 @@ class ApplicationController < ActionController::Base
 
     return if SimpleAuth.cookie_ok?(cookies)
     redirect_to login_path, alert: "Please sign in."
+  end
+
+  def set_current_user
+    Current.user = SimpleAuth.current_user(cookies)
+  end
+
+  def current_user
+    Current.user
+  end
+
+  def visible_records(scope, current_id: nil)
+    return scope.order(:name).to_a unless scope.klass.column_names.include?("hidden")
+
+    visible_scope = scope.visible
+    visible_scope = visible_scope.or(scope.where(id: current_id)) if current_id.present?
+    visible_scope.order(:name).to_a
   end
 end

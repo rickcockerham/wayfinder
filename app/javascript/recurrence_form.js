@@ -13,8 +13,9 @@
     const u = unit.value; // "day" | "week" | "month" | "year"
 
     // Show DOM for month/year; show MOY only for year
-    const showDom = (u === "month" || u === "year");
-    const showMoy = (u === "year");
+    const isRecurring = kind.value !== "no_recurrence";
+    const showDom = isRecurring && (u === "month" || u === "year");
+    const showMoy = isRecurring && (u === "year");
 
     domBox.style.display = showDom ? "" : "none";
     moyBox.style.display = showMoy ? "" : "none";
@@ -31,19 +32,14 @@
     const u = document.getElementById("item_recurrence_unit");
     if (!k || !u) return;
 
-    // Default: if kind is "none", keep everything hidden except the core fields
-    const coreFields = ["item_recurrence_unit","item_recurrence_interval","item_recurrence_start_on"];
+    const recurrenceFields = ["item_recurrence_interval"];
     const toggleAll = () => {
-      const isNone = k.value === "none";
+      const isNone = k.value === "no_recurrence";
       u.disabled = isNone;
-      coreFields.slice(1).forEach(id => {
+      recurrenceFields.forEach(id => {
         const input = document.getElementById(id);
         if (input) input.disabled = isNone;
       });
-      // also hide conditional areas when none
-      const domBox = el("field_dom"), moyBox = el("field_moy");
-      if (domBox) domBox.style.display = isNone ? "none" : domBox.style.display;
-      if (moyBox) moyBox.style.display = isNone ? "none" : moyBox.style.display;
     };
 
     k.addEventListener("change", () => { toggleAll(); updateVisibility(); });

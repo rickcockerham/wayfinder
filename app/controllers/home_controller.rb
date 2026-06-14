@@ -10,25 +10,32 @@ class HomeController < ApplicationController
     f = current_filters
     @selected_mood_ids    = f[:mood_ids]
     @selected_category_id = f[:category_id]
-    #@minutes              = f[:minutes]
     @time_i               = f[:time_i]
+    @query                = f[:q]
     @sort                 = f[:sort]
     @per                  = f[:per]
     @filters = f
 
     # --- base scope ---
-    scope = Item
+    scope = Item.for_user(current_user)
       .includes(:category, :mood, :material_requirements)
-      .where(done: false)
-      .where.missing(:blocking_edges)   # exclude blocked items
+
+    unless @query.present?
+      scope = scope.where(done: false)
+      scope = scope.visible_on_list
+      scope = scope.without_active_blockers
+    end
 
     scope = scope.where(mood_id: @selected_mood_ids) if @selected_mood_ids.any?
     scope = scope.where(category_id: @selected_category_id) if @selected_category_id.present?
-    # Apply the time cap from index (0..7). 7 = Forever (no cap).
-    scope = scope.where("time_estimate_minutes <= ?", @time_i) if @time_i < TIME_INDEX_LABELS.length - 1
+    if @query.present?
+      q = "%#{@query.downcase}%"
+      scope = scope.where("LOWER(title) LIKE ? OR LOWER(notes) LIKE ?", q, q)
+    end
+    scope = scope.where("time_scale <= ?", @time_i) if @time_i < TIME_INDEX_LABELS.length - 1
 
     @items = if @sort == "time"
-      scope.order(:time_estimate_minutes, deadline: :asc).to_a
+      scope.order(:time_scale, deadline: :asc).to_a
     else
       scope.to_a.sort_by { |it| -it.importance_score }
     end
@@ -36,7 +43,7 @@ class HomeController < ApplicationController
     @top_items = @items.first(@per)
 
     # --- per-item missing list for the table ---
-    inv = InventoryItem.all.index_by { |i| i.name.downcase }
+    inv = InventoryItem.for_user(current_user).index_by { |i| i.name.downcase }
     @missing_by_item = {}
     @top_items.each { |it| @missing_by_item[it.id] = it.missing_materials_by(inv) }
 
@@ -51,9 +58,9 @@ class HomeController < ApplicationController
   private
 
   def load_lookups
-    @moods      = Mood.order(:name).to_a
-    @categories = Category.order(:name).to_a
-    @shops      = Shop.order(:name).to_a
+    @moods      = Mood.for_user(current_user).visible.order(:name).to_a
+    @categories = Category.for_user(current_user).visible.order(:name).to_a
+    @shops      = Shop.for_user(current_user).visible.order(:name).to_a
   end
 
 

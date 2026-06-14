@@ -1,5 +1,41 @@
 // app/javascript/planner_dnd.js
 (function () {
+  let pickerSlot = null;
+
+  function coarsePointer() {
+    return window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  }
+
+  function assignCategoryToSlot(slot, catId) {
+    if (!catId) return;
+
+    const form = slot.querySelector("form.add-entry-form");
+    if (!form) return;
+
+    const input = form.querySelector(".cat-id-input");
+    input.value = catId;
+    form.requestSubmit();
+  }
+
+  function setupPicker() {
+    const picker = document.getElementById("planner-category-picker");
+    if (!picker) return;
+
+    picker.querySelectorAll(".planner-picker-option").forEach(button => {
+      button.addEventListener("click", () => {
+        if (!pickerSlot) return;
+
+        assignCategoryToSlot(pickerSlot, button.dataset.catId);
+        picker.close();
+        pickerSlot = null;
+      });
+    });
+
+    picker.addEventListener("close", () => {
+      pickerSlot = null;
+    });
+  }
+
   function onLoad() {
     // Make category chips draggable with their id
     document.querySelectorAll(".cat-chip[draggable=true]").forEach(chip => {
@@ -8,21 +44,24 @@
       });
     });
 
-    // Each slot’s drop zone is the .slot-chips div (handlers bound inline via data-action too)
     document.querySelectorAll(".slot").forEach(slot => {
       slot.addEventListener("dragover", (e) => e.preventDefault());
       slot.addEventListener("drop", (e) => {
         e.preventDefault();
-        const catId = e.dataTransfer.getData("text/plain");
-        if (!catId) return;
+        assignCategoryToSlot(slot, e.dataTransfer.getData("text/plain"));
+      });
 
-        const form = slot.querySelector("form.add-entry-form");
-        const input = form.querySelector(".cat-id-input");
-        input.value = catId;
-        // Turbo will swap the slot frame with server response
-        form.requestSubmit();
+      slot.addEventListener("click", () => {
+        if (!coarsePointer()) return;
+
+        const picker = document.getElementById("planner-category-picker");
+        if (!picker) return;
+
+        pickerSlot = slot;
+        picker.showModal();
       });
     });
+    setupPicker();
   }
 
   document.addEventListener("turbo:load", onLoad);

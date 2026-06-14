@@ -6,15 +6,29 @@
 <h1><%= @item.title %></h1>
 <p><strong>Category:</strong> <%= @item.category&.name %></p>
 <p><strong>Mood:</strong> <%= @item.mood&.name %></p>
-<p><strong>Importance Score:</strong> <%= @item.importance_score %></p>
-<p><strong>Impacts:</strong> P=<%= @item.personal_impact %>, E=<%= @item.emotional_impact %>, F=<%= @item.family_impact %></p>
-<p><strong>Time:</strong> <%= FilterPersistence::TIME_INDEX_LABELS[@item.time_estimate_minutes] rescue 'unknown' %></p>
-<p><strong>Deadline:</strong> <%= @item.deadline %></p>
+<p><strong>Time:</strong> <%= @item.time_scale_label %></p>
+<p><strong>Cost:</strong> <%= @item.cost_cents %></p>
+<% if @item.no_recurrence? %>
+  <p><strong>Deadline:</strong> <%= @item.deadline %></p>
+<% else %>
+  <p><strong>Next Date:</strong> <%= @item.deadline %></p>
+  <p><strong>Schedule:</strong> <%= @item.recurrence_schedule_description %></p>
+<% end %>
+<p><strong>Hide Until:</strong> <%= @item.hide_days %> day<%= "s" unless @item.hide_days == 1 %> before deadline</p>
 
 <%= form_with(model: @item) do |f| %>
 <!-- Hidden field stores HTML sent to Rails -->
 <%= f.hidden_field :notes, id: "item_notes" %>
 <p><strong>Done:</strong> <%= f.check_box :done %></p>
+<p><strong>Personal impact:</strong><br>
+  <%= f.range_field :personal_impact, min: 0, max: 5, step: 1 %>
+</p>
+<p><strong>Emotional impact:</strong><br>
+  <%= f.range_field :emotional_impact, min: 0, max: 5, step: 1 %>
+</p>
+<p><strong>Family impact:</strong><br>
+  <%= f.range_field :family_impact, min: 0, max: 5, step: 1 %>
+</p>
 <p><strong>Notes:</strong><br>
   <div id="notes_editor" class="ql-dark"></div>
 </p>

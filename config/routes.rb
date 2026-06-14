@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
 
   root "home#index"
+  resource :importance_setting, only: [:show, :update]
 
   resources :items do
     member do

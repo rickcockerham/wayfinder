@@ -5,6 +5,7 @@ if (window.Turbo) { Turbo.session.drive = false }  // no Turbo navigation
 import "controllers"
 import "wysiwyg"
 import "filters_toggle"
+import "home_filters"
 import "recurrence_form"
 import "planner_dnd"
 import "buttonfidget"

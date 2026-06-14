@@ -1,0 +1,3 @@
+default_user:
+  name: Default
+  access_key: test-access-key

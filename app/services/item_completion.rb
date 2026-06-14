@@ -16,7 +16,7 @@ class ItemCompletion
 
     ActiveRecord::Base.transaction do
       # lock inventory rows we’re going to touch
-      @item.item_inventories.includes(:inventory_item).find_each do |ii|
+      @item.item_inventories.for_user(@item.user).includes(:inventory_item).find_each do |ii|
         next unless ii.qty_reserved.to_f.positive?
         inv = ii.inventory_item.lock!  # SELECT ... FOR UPDATE
 

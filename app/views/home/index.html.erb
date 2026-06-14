@@ -16,19 +16,33 @@
     <!-- Moods: checkboxes -->
     <%= form_with url: root_path, method: :get, local: true do %>
     <div>
+      <strong>Search:</strong><br>
+      <%= search_field_tag :q, @filters[:q], placeholder: "Search titles and notes" %>
+    </div>
+
+    <div>
       <strong>Mood:</strong><br>
-      <% @moods.each do |m| %>
-      <label style="margin-right:1rem;">
-        <%= check_box_tag "mood_ids[]", m.id, @filters[:mood_ids].include?(m.id) %> <%= m.name %>
-      </label>
-      <% end %>
+      <div class="filter-chip-group" data-filter-chip-group="moods">
+        <% @moods.each do |m| %>
+          <% selected = @filters[:mood_ids].include?(m.id) %>
+          <button
+            type="button"
+            class="filter-chip<%= " is-active" if selected %>"
+            data-filter-chip
+            data-filter-target="mood-<%= m.id %>"
+            aria-pressed="<%= selected %>">
+            <%= m.name %>
+          </button>
+          <%= check_box_tag "mood_ids[]", m.id, selected, id: "mood-#{m.id}", class: "filter-chip-input" %>
+        <% end %>
+      </div>
     </div>
 
     <!-- Category: select -->
     <div>
       <strong>Category:</strong><br>
       <%= select_tag :category_id,
-          options_from_collection_for_select(Category.order(:name), :id, :name, @filters[:category_id]),
+          options_from_collection_for_select(@categories, :id, :name, @filters[:category_id]),
           include_blank: "All categories" %>
     </div>
 
@@ -36,13 +50,14 @@
     <div>
       <strong>Time commitment:</strong>
       <label style="display:block;margin-top:.5rem">
-        Time commitment:
-        <%= select_tag :time_i,
-            options_for_select(
-            HomeController::TIME_INDEX_LABELS.each_with_index.map { |label, i| [label, i] },
-            @filters[:time_i].to_i
-            )
-            %>
+        <input type="range"
+               id="time_i"
+               name="time_i"
+               min="0"
+               max="<%= HomeController::TIME_INDEX_LABELS.length - 1 %>"
+               step="1"
+               value="<%= @filters[:time_i].to_i %>">
+        <span id="time_i_label" class="muted"><%= HomeController::TIME_INDEX_LABELS[@filters[:time_i].to_i] %></span>
       </label>
     </div>
 
@@ -71,14 +86,13 @@
       </tr>
     </thead>
     <tbody>
-      <% inv = InventoryItem.all.index_by { |i| i.name.downcase } %>
       <% @top_items.each do |it| %>
       <% missing = @missing_by_item[it.id] || [] %>
       <tr id="<%= dom_id(it) %>">
         <td data-label="Title"><%= link_to it.title, it %></td>
         <td data-label="Category" class="hide-sm"><%= it.category&.name %></td>
         <td data-label="Mood" class="hide-sm"><%= it.mood&.name %></td>
-        <td data-label="Time" class="hide-sm"><%= FilterPersistence::TIME_INDEX_LABELS[it.time_estimate_minutes] rescue 'unknown' %></td>
+        <td data-label="Time" class="hide-sm"><%= it.time_scale_label %></td>
         <td data-label="Impacts" class="hide-sm"><%= [it.personal_impact, it.emotional_impact, it.family_impact].join("/") %></td>
         <td data-label="Deadline" class="hide-sm"><%= it.deadline %></td>
         <td data-label="Missing">
@@ -103,8 +117,9 @@
     <% (@selected_mood_ids || []).each do |mid| %>
       <input type="hidden" name="mood_ids[]" value="<%= mid %>">
     <% end %>
+    <input type="hidden" name="q" value="<%= @query %>">
     <input type="hidden" name="category_id" value="<%= @selected_category_id %>">
-    <input type="hidden" name="minutes" value="<%= @minutes %>">
+    <input type="hidden" name="time_i" value="<%= @time_i %>">
     <input type="hidden" name="sort" value="<%= @sort %>">
     <input type="hidden" name="per" value="<%= @per %>">
 
@@ -141,3 +156,4 @@
 <%= link_to "Shops", shops_path %>
 <%= link_to "Categories", categories_path %>
 <%= link_to "Item Blocks", item_blocks_path %>
+<%= link_to "Scoring", importance_setting_path %>
