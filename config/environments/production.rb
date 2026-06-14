@@ -91,6 +91,7 @@ Rails.application.configure do
   config.hosts << "127.0.0.1"	
   config.hosts << "69.164.205.187"	
   config.hosts << "wayfinder.justnotmyself.com"
+  config.hosts << "mywayfinder.app"
   #config.hosts = [
   #   ""     # Allow requests from example.com
    #]

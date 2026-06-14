@@ -12,7 +12,7 @@
       <td><%= ii.qty_have %></td>
       <td><%= ii.location&.name %></td>
       <td>
-        <%= link_to "Destroy", ii, data: { turbo_method: :delete, turbo_confirm: "Delete?" } %>
+        <%= link_to "Destroy", ii, method: :delete, data: { confirm: "Delete?" } %>
       </td>
     </tr>
   <% end %>

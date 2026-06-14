@@ -14,7 +14,7 @@
       <td>
         <%= link_to "Remove",
           material_requirement_path(mr),
-            data: { turbo_method: :delete } %> <% #, turbo_confirm: "Remove this material?"
+            method: :delete, data: { confirm: "Delete?" }
                                                   %>
         <%= link_to "Edit", edit_material_requirement_path(mr) %>
       </td>

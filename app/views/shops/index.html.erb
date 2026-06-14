@@ -8,7 +8,7 @@
       <td><%= link_to rec.name, rec %></td>
       <td>
         <%= link_to "Edit", url_for([:edit, rec]) %> |
-        <%= link_to "Destroy", rec, data: { turbo_method: :delete, turbo_confirm: "Delete?" } %>
+        <%= link_to "Destroy", rec, method: :delete, data: { confirm: "Delete?" } %>
       </td>
     </tr>
   <% end %>

@@ -12,7 +12,7 @@
         <% frame_id = "slot-#{on_date.strftime('%Y%m%d')}-#{day_part}" %>
         <%= link_to e.category.name,
           schedule_entry_path(e),
-          data: { turbo_method: :delete, turbo_frame: frame_id },
+          method: :delete, data: { confirm: "Delete?" },
           class: "chip" %>
       <% end %>
     <% else %>

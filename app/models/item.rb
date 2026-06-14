@@ -33,23 +33,23 @@ class Item < ApplicationRecord
   end
 
   IMPORTANCE = {
-    weights:        { personal: 2.0, emotional: 3.0, family: 2.0 },
+    weights:        { personal: 0.5, emotional: 0.75, family: 0.75 },
     horizon_days:   30,
-    u_weight:       15.0,  # max pressure at deadline day
+    upcoming_weight: 5.0,  # max pressure at deadline day up to x% of the impact.
     overdue_cap:    30,
-    overdue_per:    2.0,
+    overdue_per:    5.0,
     # Time penalty (NEW)
-    time_per_hour:  0.5,   # points removed per hour
-    time_cap_hours: 20,    # cap hours counted toward penalty
+    time_penalty:   0,   # points removed per hour  it was 0.5.  I disabled it.
+    time_cap_hours: 10,    # cap hours counted toward penalty
     # Optional quick-task bonus (leave 0.0 to disable)
-    quick_minutes:  30,
-    quick_bonus:    10.0
+    quick_minutes:  0,
+    quick_bonus:    3
   }.freeze
 
   def importance_score(today: Date.current)
     w  = IMPORTANCE[:weights]
     h  = IMPORTANCE[:horizon_days].to_f
-    uw = IMPORTANCE[:u_weight].to_f
+    uw = IMPORTANCE[:upcoming_weight].to_f
 
     impact = w[:personal]*personal_impact.to_f +
              w[:emotional]*emotional_impact.to_f +
@@ -68,10 +68,11 @@ class Item < ApplicationRecord
       end
     end
 
-    # NEW: time penalty
-    hours = [time_estimate_minutes.to_i, 0].max / 60.0
-    time_penalty = - [hours, IMPORTANCE[:time_cap_hours]].min * IMPORTANCE[:time_per_hour]
-
+    # disabled   : time penalty
+    #hours = [time_estimate_minutes.to_i, 0].max
+    #time_penalty = - [hours, IMPORTANCE[:time_cap_hours]].min * IMPORTANCE[:time_penalty]
+    time_penalty = 0
+    
     quick = if time_estimate_minutes.to_i > 0 &&
                time_estimate_minutes.to_i <= IMPORTANCE[:quick_minutes]
               IMPORTANCE[:quick_bonus].to_f
@@ -94,7 +95,7 @@ class Item < ApplicationRecord
       " #{w[:family]}*COALESCE(#{t}.family_impact,0)"
 
     h        = IMPORTANCE[:horizon_days]
-    u_weight = IMPORTANCE[:u_weight]
+    u_weight = IMPORTANCE[:upcoming_weight]
     upcoming = "#{u_weight} * (1 - LEAST(GREATEST(#{d},0)/#{h}.0, 1))"
 
     cap   = IMPORTANCE[:overdue_cap]
