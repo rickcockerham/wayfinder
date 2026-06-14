@@ -134,6 +134,30 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     assert_select "input.filter-chip-input[type='checkbox'][name='mood_ids[]']", minimum: 1
   end
 
+  test "mobile item cards expose mood time and deadline or schedule fields" do
+    recurring = @user.items.create!(
+      title: "Weekly reminder",
+      category: categories(:default_category),
+      mood: moods(:default_mood),
+      recurrence_kind: :fixed_schedule,
+      recurrence_unit: :week,
+      recurrence_interval: 1,
+      deadline: Date.current,
+      hide_days: 1,
+      personal_impact: 5,
+      time_scale: 2
+    )
+
+    get root_url, params: { per: 100 }
+
+    assert_response :success
+    assert_includes @response.body, recurring.title
+    assert_includes @response.body, 'data-label="Mood"'
+    assert_includes @response.body, 'data-label="Time"'
+    assert_includes @response.body, 'data-label="Schedule"'
+    assert_includes @response.body, recurring.recurrence_schedule_description
+  end
+
   test "home filters exclude hidden categories and moods" do
     visible_category = @user.categories.create!(name: "Visible category")
     hidden_category = @user.categories.create!(name: "Hidden category", hidden: true)

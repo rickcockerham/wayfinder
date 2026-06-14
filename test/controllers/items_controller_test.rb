@@ -61,6 +61,7 @@ class ItemsControllerTest < ActionDispatch::IntegrationTest
   test "should show item" do
     get item_url(@item)
     assert_response :success
+    assert_not_includes @response.body, "<strong>Cost:</strong>"
     assert_select "input[type='range'][name='item[personal_impact]'][min='0'][max='5'][step='1']"
     assert_select "input[type='range'][name='item[emotional_impact]'][min='0'][max='5'][step='1']"
     assert_select "input[type='range'][name='item[family_impact]'][min='0'][max='5'][step='1']"
@@ -97,6 +98,7 @@ class ItemsControllerTest < ActionDispatch::IntegrationTest
     get edit_item_url(@item)
     assert_response :success
     assert_select "input[name='item[deadline]']"
+    assert_select "input[name='item[cost_cents]']", count: 0
     assert_select "input[name='item[recurrence_start_on]']", count: 0
   end
 

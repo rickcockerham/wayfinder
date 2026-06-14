@@ -72,6 +72,7 @@ input[type="number"],
 input[type="date"],
 input[type="time"],
 input[type="search"],
+input[type="password"],
 textarea,
 select {
   background: var(--surface);
@@ -446,26 +447,30 @@ a:hover::before {
   .items-table thead { display: none; }
   .items-table, .items-table tbody, .items-table tr, .items-table td {
     display: block;
-    width: 95%;
+    width: 99%;
   }
   .items-table tr {
     margin: 0 0 .75rem;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     border-radius: 8px;
-    padding: .25rem .25rem;
+    padding: .45rem .6rem;
+    background: linear-gradient(180deg, var(--surface), var(--surface-2));
+    box-shadow: 0 8px 18px var(--shadow);
   }
   .items-table td {
     display: flex;
     justify-content: space-between;
     gap: 0.25rem;
     border: none;
-    border-bottom: 1px dashed #eee;
+    border-bottom: 1px dashed #243244;
     word-break: break-word;
+    padding: .45rem 0;
   }
   .items-table td:last-child { border-bottom: 0; }
   .items-table td::before {
     content: attr(data-label);
     font-weight: 600;
+    color: var(--muted);
   }
   /* optionally hide low-priority columns on tiny screens */
   .hide-sm { display: none !important; }

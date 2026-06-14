@@ -1,4 +1,9 @@
-<p><%= link_to "Back", root_path %></p>
+<p>
+  <%= button_to "Logout", logout_path,
+      method: :delete,
+      form: { class: "pull-right", onsubmit: "return confirm('Log out?');" } %>
+  <%= link_to "Back", root_path %>
+</p>
 
 <h1>Importance Settings</h1>
 

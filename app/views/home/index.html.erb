@@ -81,8 +81,8 @@
   <table class="items-table">
     <thead>
       <tr>
-        <th>Title</th><th class="hide-sm">Category</th><th class="hide-sm">Mood</th><th class="hide-sm">Time</th>
-        <th class="hide-sm">Impacts P/E/F</th><th class="hide-sm">Deadline</th><th class="hide-sm">Missing</th>
+        <th>Title</th><th class="hide-sm">Category</th><th>Mood</th><th>Time</th>
+        <th class="hide-sm">Impacts P/E/F</th><th>When</th><th class="hide-sm">Missing</th>
       </tr>
     </thead>
     <tbody>
@@ -91,11 +91,13 @@
       <tr id="<%= dom_id(it) %>">
         <td data-label="Title"><%= link_to it.title, it %></td>
         <td data-label="Category" class="hide-sm"><%= it.category&.name %></td>
-        <td data-label="Mood" class="hide-sm"><%= it.mood&.name %></td>
-        <td data-label="Time" class="hide-sm"><%= it.time_scale_label %></td>
+        <td data-label="Mood"><%= it.mood&.name %></td>
+        <td data-label="Time"><%= it.time_scale_label %></td>
         <td data-label="Impacts" class="hide-sm"><%= [it.personal_impact, it.emotional_impact, it.family_impact].join("/") %></td>
-        <td data-label="Deadline" class="hide-sm"><%= it.deadline %></td>
-        <td data-label="Missing">
+        <td data-label="<%= it.no_recurrence? ? "Deadline" : "Schedule" %>">
+          <%= it.no_recurrence? ? it.deadline : it.recurrence_schedule_description %>
+        </td>
+        <td data-label="Missing" class="hide-sm">
           <% if missing.empty? %>
           ✅ ready
           <% else %>

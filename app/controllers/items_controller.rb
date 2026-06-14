@@ -177,7 +177,7 @@ class ItemsController < ApplicationController
     params.require(:item).permit(
       :title, :notes, :category_id, :mood_id,
       :personal_impact, :emotional_impact, :family_impact,
-      :time_scale, :cost_cents, :deadline, :hide_days, :done, :parent_id,
+      :time_scale, :deadline, :hide_days, :done, :parent_id,
       :recurrence_kind, :recurrence_unit, :recurrence_interval,
       :recurrence_day_of_month, :recurrence_month_of_year
     )

@@ -7,7 +7,6 @@
 <p><strong>Category:</strong> <%= @item.category&.name %></p>
 <p><strong>Mood:</strong> <%= @item.mood&.name %></p>
 <p><strong>Time:</strong> <%= @item.time_scale_label %></p>
-<p><strong>Cost:</strong> <%= @item.cost_cents %></p>
 <% if @item.no_recurrence? %>
   <p><strong>Deadline:</strong> <%= @item.deadline %></p>
 <% else %>
