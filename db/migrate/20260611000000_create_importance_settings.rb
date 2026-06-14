@@ -1,4 +1,12 @@
 class CreateImportanceSettings < ActiveRecord::Migration[7.1]
+  class MigrationUser < ActiveRecord::Base
+    self.table_name = "users"
+  end
+
+  class MigrationImportanceSetting < ActiveRecord::Base
+    self.table_name = "importance_settings"
+  end
+
   DEFAULTS = {
     personal_weight: 2.0,
     emotional_weight: 3.0,
@@ -30,8 +38,17 @@ class CreateImportanceSettings < ActiveRecord::Migration[7.1]
       t.timestamps
     end
 
-    User.find_each do |user|
-      user.create_importance_setting!(DEFAULTS)
+    MigrationUser.reset_column_information
+    MigrationImportanceSetting.reset_column_information
+
+    MigrationUser.find_each do |user|
+      MigrationImportanceSetting.create!(
+        DEFAULTS.merge(
+          user_id: user.id,
+          created_at: Time.current,
+          updated_at: Time.current
+        )
+      )
     end
   end
 
