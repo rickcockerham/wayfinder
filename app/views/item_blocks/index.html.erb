@@ -12,7 +12,7 @@
       <td>
         <%= link_to "Show", ib %> |
         <%= link_to "Edit", edit_item_block_path(ib) %> |
-        <%= link_to "Destroy", ib, data: { turbo_method: :delete, turbo_confirm: "Delete?" } %>
+        <%= link_to "Destroy", ib, method: :delete, data: { confirm: "Delete?" } %>
       </td>
     </tr>
   <% end %>

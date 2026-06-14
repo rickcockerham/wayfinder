@@ -9,7 +9,7 @@
       <td><%= rec.hidden? ? "Yes" : "No" %></td>
       <td>
         <%= link_to "Edit", url_for([:edit, rec]) %> |
-        <%= link_to "Destroy", rec, data: { turbo_method: :delete, turbo_confirm: "Delete?" } %>
+	<%= button_to "Destroy", rec, method: :delete, data: { confirm: "Delete?" } %>
       </td>
     </tr>
   <% end %>

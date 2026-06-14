@@ -74,5 +74,5 @@
     </ul>
   </div>
 </div>
-<%= button_to "Destroy", @item, method: :delete,
-    data: { turbo_confirm: "Are you sure?" } %>
+<%= button_to "Destroy", @item,
+    method: :delete, data: { confirm: "Delete?" } %>

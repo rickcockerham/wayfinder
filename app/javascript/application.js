@@ -1,5 +1,7 @@
 // Configure your import map in config/importmap.rb. Read more: https://github.com/rails/importmap-rails
 import "@hotwired/turbo-rails"
+if (window.Turbo) { Turbo.session.drive = false }  // no Turbo navigation
+
 import "controllers"
 import "wysiwyg"
 import "filters_toggle"
