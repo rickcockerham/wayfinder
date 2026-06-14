@@ -33,5 +33,5 @@ class ShopsController < ApplicationController
 
   private
   def set_shop; @shop = Shop.for_user(current_user).find(params[:id]); end
-  def shop_params; params.require(:shop).permit(:name); end
+  def shop_params; params.require(:shop).permit(:name, :hidden); end
 end

@@ -10,6 +10,7 @@ class User < ApplicationRecord
   has_many :material_requirements, dependent: :destroy
   has_many :item_inventories, dependent: :destroy
   has_many :schedule_entries, dependent: :destroy
+  has_one :importance_setting, dependent: :destroy
 
   validates :name, presence: true
   validates :access_key, presence: true, uniqueness: true

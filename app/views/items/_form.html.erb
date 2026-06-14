@@ -35,10 +35,10 @@
              ></p>
 
 <p>Time estimate
-  <%= select_tag "item[time_estimate_minutes]",
+  <%= select_tag "item[time_scale]",
       options_for_select(
       HomeController::TIME_INDEX_LABELS.each_with_index.map { |label, i| [label, i] },
-      @item.time_estimate_minutes
+      @item.time_scale
       )
       %>
 </p>

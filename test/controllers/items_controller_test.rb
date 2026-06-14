@@ -17,6 +17,32 @@ class ItemsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "new item form excludes hidden categories and moods" do
+    visible_category = @user.categories.create!(name: "Visible category")
+    hidden_category = @user.categories.create!(name: "Hidden category", hidden: true)
+    visible_mood = @user.moods.create!(name: "Visible mood")
+    hidden_mood = @user.moods.create!(name: "Hidden mood", hidden: true)
+
+    get new_item_url
+
+    assert_response :success
+    assert_includes @response.body, visible_category.name
+    assert_not_includes @response.body, hidden_category.name
+    assert_includes @response.body, visible_mood.name
+    assert_not_includes @response.body, hidden_mood.name
+  end
+
+  test "materials form excludes hidden shops" do
+    visible_shop = @user.shops.create!(name: "Visible shop")
+    hidden_shop = @user.shops.create!(name: "Hidden shop", hidden: true)
+
+    get materials_item_url(@item)
+
+    assert_response :success
+    assert_includes @response.body, visible_shop.name
+    assert_not_includes @response.body, hidden_shop.name
+  end
+
   test "should create item" do
     assert_difference("Item.count") do
       post items_url, params: {

@@ -33,5 +33,5 @@ class MoodsController < ApplicationController
 
   private
   def set_mood; @mood = Mood.for_user(current_user).find(params[:id]); end
-  def mood_params; params.require(:mood).permit(:name); end
+  def mood_params; params.require(:mood).permit(:name, :hidden); end
 end

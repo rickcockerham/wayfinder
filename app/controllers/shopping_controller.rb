@@ -2,8 +2,8 @@
 # app/controllers/shopping_controller.rb
 class ShoppingController < ApplicationController
   def index
-    @shops     = Shop.for_user(current_user).order(:name).to_a
-    @locations = Location.for_user(current_user).order(:name).to_a
+    @shops     = Shop.for_user(current_user).visible.order(:name).to_a
+    @locations = Location.for_user(current_user).visible.order(:name).to_a
 
     requested_shop_id = params[:shop_id].presence&.to_i
     @shop_id = @shops.any? { |shop| shop.id == requested_shop_id } ? requested_shop_id : @shops.first&.id

@@ -33,5 +33,5 @@ class CategoriesController < ApplicationController
 
   private
   def set_category; @category = Category.for_user(current_user).find(params[:id]); end
-  def category_params; params.require(:category).permit(:name); end
+  def category_params; params.require(:category).permit(:name, :hidden); end
 end

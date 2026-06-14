@@ -105,8 +105,8 @@ class ItemsController < ApplicationController
 
     @req_by_downcase = @item.material_requirements.index_by { |mr| mr.name.downcase }
 
-    @shops   = Shop.for_user(current_user).order(:name).to_a
     @shop_id = params[:shop_id].presence&.to_i
+    @shops   = visible_records(Shop.for_user(current_user), current_id: @shop_id)
   end
 
   def materials_post
@@ -165,8 +165,8 @@ class ItemsController < ApplicationController
   end
 
   def load_form_collections
-    @categories = Category.for_user(current_user).order(:name).to_a
-    @moods = Mood.for_user(current_user).order(:name).to_a
+    @categories = visible_records(Category.for_user(current_user), current_id: @item&.category_id)
+    @moods = visible_records(Mood.for_user(current_user), current_id: @item&.mood_id)
   end
 
   def owned_item_id(id)
@@ -177,7 +177,7 @@ class ItemsController < ApplicationController
     params.require(:item).permit(
       :title, :notes, :category_id, :mood_id,
       :personal_impact, :emotional_impact, :family_impact,
-      :time_estimate_minutes, :cost_cents, :deadline, :hide_days, :done, :parent_id,
+      :time_scale, :cost_cents, :deadline, :hide_days, :done, :parent_id,
       :recurrence_kind, :recurrence_unit, :recurrence_interval,
       :recurrence_day_of_month, :recurrence_month_of_year
     )

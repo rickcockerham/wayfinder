@@ -54,7 +54,7 @@ class MaterialRequirementsController < ApplicationController
 
   def load_form_collections
     @items = Item.for_user(current_user).order(:title).to_a
-    @shops = Shop.for_user(current_user).order(:name).to_a
+    @shops = visible_records(Shop.for_user(current_user), current_id: @material_requirement&.shop_id)
   end
 
   def owned_item_id(id)

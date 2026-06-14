@@ -4,7 +4,6 @@ module FilterPersistence
 
   FILTER_KEY = :filters_v2   # session key
   TTL        = 1.hour
-  MAX_MINUTES = 6
   PER_OPTIONS = [5, 20, 100].freeze
   TIME_INDEX_LABELS = [
     "Quick",  # 0
@@ -15,6 +14,16 @@ module FilterPersistence
     "Months",        # 5
     "Years",         # 6
     "Forever"        # 7
+  ].freeze
+  TIME_INDEX_LIMITS = [
+    30,
+    60,
+    8 * 60,
+    24 * 60,
+    7 * 24 * 60,
+    30 * 24 * 60,
+    365 * 24 * 60,
+    nil
   ].freeze
 
   included do
@@ -45,7 +54,7 @@ module FilterPersistence
 
   def any_filter_param?
     params.key?(:mood_ids) || params.key?(:category_id) ||
-      params.key?(:time_i) || params.key?(:quick) ||   # quick maps to 0
+      params.key?(:time_i) || params.key?(:q) ||
       params.key?(:sort)   || params.key?(:per)
   end
 
@@ -54,12 +63,8 @@ module FilterPersistence
     out = base.dup
     out[:mood_ids] = Array(params[:mood_ids]).reject(&:blank?).map(&:to_i) if params.key?(:mood_ids)
     out[:category_id] = params[:category_id].presence&.to_i if params.key?(:category_id)
-    if params.key?(:time_i)
-      out[:time_i] = params[:time_i].to_i
-    elsif params[:quick].present?
-      out[:time_i] = 0
-    end
-    #out[:minutes] = params[:minutes].presence&.to_i if params.key?(:minutes)
+    out[:time_i] = params[:time_i].to_i if params.key?(:time_i)
+    out[:q] = params[:q].to_s.strip if params.key?(:q)
     out[:sort] = params[:sort] if params.key?(:sort)
     out[:per]  = params[:per].presence&.to_i if params.key?(:per)
     out
@@ -71,7 +76,7 @@ module FilterPersistence
   end
 
   def sanity(f)
-    allowed_mood_ids = Mood.for_user(current_user).pluck(:id)
+    allowed_mood_ids = Mood.for_user(current_user).visible.pluck(:id)
     f[:mood_ids] = if f[:mood_ids].present?
       Array(f[:mood_ids]).map(&:to_i) & allowed_mood_ids
     else
@@ -79,12 +84,10 @@ module FilterPersistence
     end
 
     category_id = f[:category_id].presence&.to_i
-    f[:category_id] = Category.for_user(current_user).exists?(id: category_id) ? category_id : nil
-    #f[:minutes] = f[:minutes].to_i
-    #f[:minutes] = MAX_MINUTES if f[:minutes] <= 0 || f[:minutes] > MAX_MINUTES
-    # time_i: clamp to 0..7, default 7 (Forever)
+    f[:category_id] = Category.for_user(current_user).visible.exists?(id: category_id) ? category_id : nil
     ti = f[:time_i].to_i
     f[:time_i] = (0..7).cover?(ti) ? ti : 7
+    f[:q] = f[:q].to_s.strip
     f[:sort] = %w[time importance].include?(f[:sort]) ? f[:sort] : "importance"
     f[:per]  = PER_OPTIONS.include?(f[:per].to_i) ? f[:per].to_i : 5
     f
@@ -92,30 +95,24 @@ module FilterPersistence
 
   def default_filters
     {
-      mood_ids: Mood.for_user(current_user).pluck(:id),                 # all moods
+      mood_ids: Mood.for_user(current_user).visible.pluck(:id),                 # all moods
       category_id: active_category_for_now&.id,  # ← planner drives default
       time_i: 7,
-      #minutes: MAX_MINUTES,
+      q: "",
       sort: "importance",
       per: 5
     }
   end
 
   # ===== Weekly Planner hookup =====
-
-  # morning 05–11, afternoon 12–17, evening 18–22 (adjust if you like)
   def current_day_part(now = Time.zone ? Time.zone.now : Time.now)
-    h = now.hour
-    return "morning"   if (5..11).cover?(h)
-    return "afternoon" if (12..17).cover?(h)
-    return "evening"   if (18..22).cover?(h)
-    nil
+    importance_setting.day_part_for(now)
   end
 
   def active_category_for_now
     part = current_day_part
     return nil unless part
-    today = (Time.zone || Time).now.to_date
+    today = importance_setting.current_local_date
 
     ScheduleEntry.for_user(current_user).where(on_date: today, day_part: part)
       .includes(:category)
@@ -123,5 +120,9 @@ module FilterPersistence
       .limit(1)
       .pick(:category_id)
       &.then { |id| Category.for_user(current_user).find_by(id: id) }
+  end
+
+  def importance_setting
+    @importance_setting ||= current_user.importance_setting || current_user.create_importance_setting!(ImportanceSetting.default_attributes)
   end
 end

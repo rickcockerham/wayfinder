@@ -4,9 +4,10 @@ class ScheduleEntriesController < ApplicationController
   before_action :set_week
 
   def index
-    @categories = Category.for_user(current_user).order(:name).to_a
+    @categories = Category.for_user(current_user).visible.order(:name).to_a
     @entries    = ScheduleEntry.for_user(current_user).where(on_date: @week).includes(:category).to_a
     @by_slot    = @entries.group_by { |e| [e.on_date, e.day_part] }
+    @planner_slots = planner_settings.planner_slots
   end
 
   def create
@@ -61,5 +62,9 @@ class ScheduleEntriesController < ApplicationController
 
   def slot_dom_id(date, part)
     "slot-#{date.strftime('%Y%m%d')}-#{part}"
+  end
+
+  def planner_settings
+    @planner_settings ||= current_user.importance_setting || current_user.create_importance_setting!(ImportanceSetting.default_attributes)
   end
 end

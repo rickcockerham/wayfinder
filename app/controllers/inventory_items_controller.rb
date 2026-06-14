@@ -50,7 +50,7 @@ class InventoryItemsController < ApplicationController
   end
 
   def load_form_collections
-    @locations = Location.for_user(current_user).order(:name).to_a
-    @shops = Shop.for_user(current_user).order(:name).to_a
+    @locations = visible_records(Location.for_user(current_user), current_id: @inventory_item&.location_id)
+    @shops = visible_records(Shop.for_user(current_user), current_id: @inventory_item&.shop_id)
   end
 end

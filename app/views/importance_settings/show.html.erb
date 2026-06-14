@@ -1,0 +1,108 @@
+<p><%= link_to "Back", root_path %></p>
+
+<h1>Importance Settings</h1>
+
+<%= form_with model: @importance_setting, url: importance_setting_path, method: :patch, local: true do |f| %>
+  <% if @importance_setting.errors.any? %>
+    <div style="color:red"><%= @importance_setting.errors.full_messages.to_sentence %></div>
+  <% end %>
+
+  <p>
+    Personal weight<br>
+    <%= f.number_field :personal_weight, step: 0.1, min: 0 %><br>
+    <small>How strongly the personal impact slider contributes to the score.</small>
+  </p>
+
+  <p>
+    Emotional weight<br>
+    <%= f.number_field :emotional_weight, step: 0.1, min: 0 %><br>
+    <small>How strongly the emotional impact slider contributes to the score.</small>
+  </p>
+
+  <p>
+    Family weight<br>
+    <%= f.number_field :family_weight, step: 0.1, min: 0 %><br>
+    <small>How strongly the family impact slider contributes to the score.</small>
+  </p>
+
+  <p>
+    Horizon days<br>
+    <%= f.number_field :horizon_days, step: 1, min: 0 %><br>
+    <small>How many days out the urgency ramp starts. Larger numbers make far-off deadlines matter sooner.</small>
+  </p>
+
+  <p>
+    Urgency weight<br>
+    <%= f.number_field :urgency_weight, step: 0.1, min: 0 %><br>
+    <small>The maximum urgency boost an item gets as it reaches its deadline day.</small>
+  </p>
+
+  <p>
+    Overdue cap days<br>
+    <%= f.number_field :overdue_cap_days, step: 1, min: 0 %><br>
+    <small>Limits how many overdue days keep increasing the score.</small>
+  </p>
+
+  <p>
+    Overdue per day<br>
+    <%= f.number_field :overdue_per_day, step: 0.1, min: 0 %><br>
+    <small>How much score is added for each overdue day, up to the cap.</small>
+  </p>
+
+  <p>
+    Time penalty per level<br>
+    <%= f.number_field :time_penalty_per_level, step: 0.1, min: 0 %><br>
+    <small>How much score is subtracted for each step up the time commitment scale.</small>
+  </p>
+
+  <p>
+    Time penalty max level<br>
+    <%= f.select :time_penalty_max_level,
+        options_for_select(Item::TIME_SCALE_LABELS.each_with_index.map { |label, i| [label, i] }, @importance_setting.time_penalty_max_level) %><br>
+    <small>Stops larger tasks from being penalized past this time commitment level.</small>
+  </p>
+
+  <p>
+    Short task max level<br>
+    <%= f.select :quick_task_max_level,
+        options_for_select(Item::TIME_SCALE_LABELS.each_with_index.map { |label, i| [label, i] }, @importance_setting.quick_task_max_level) %><br>
+    <small>Tasks at or below this time commitment level get the short-task score bump.</small>
+  </p>
+
+  <p>
+    Quick task bonus<br>
+    <%= f.number_field :quick_task_bonus, step: 0.1, min: 0 %><br>
+    <small>The maximum bonus for the shortest tasks. The bonus tapers down as time commitment gets larger within the short-task range.</small>
+  </p>
+
+  <h2>Planner Settings</h2>
+
+  <p>
+    Timezone<br>
+    <%= f.select :timezone, options_for_select(ImportanceSetting::TIMEZONE_OPTIONS, @importance_setting.timezone) %><br>
+    <small>The timezone used to decide which planner time slot is active right now.</small>
+  </p>
+
+  <p>
+    Morning starts at<br>
+    <%= time_field_tag "importance_setting[planner_morning_start_time]",
+        format("%02d:%02d", @importance_setting.planner_morning_start_minute / 60, @importance_setting.planner_morning_start_minute % 60) %><br>
+    <small>The planner treats times from here until the afternoon start as morning.</small>
+  </p>
+
+  <p>
+    Afternoon starts at<br>
+    <%= time_field_tag "importance_setting[planner_afternoon_start_time]",
+        format("%02d:%02d", @importance_setting.planner_afternoon_start_minute / 60, @importance_setting.planner_afternoon_start_minute % 60) %><br>
+    <small>The planner treats times from here until the evening start as afternoon.</small>
+  </p>
+
+  <p>
+    Evening starts at<br>
+    <%= time_field_tag "importance_setting[planner_evening_start_time]",
+        format("%02d:%02d", @importance_setting.planner_evening_start_minute / 60, @importance_setting.planner_evening_start_minute % 60) %><br>
+    <small>The planner treats times from here onward as evening.</small>
+  </p>
+
+  <p><%= f.submit "Save settings" %></p>
+<% end %>

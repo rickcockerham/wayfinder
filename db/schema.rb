@@ -10,14 +10,37 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_09_000001) do
+ActiveRecord::Schema[7.1].define(version: 2026_06_13_000003) do
   create_table "categories", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.boolean "hidden", default: false, null: false
     t.index ["user_id", "name"], name: "idx_categories_user_name", unique: true
     t.index ["user_id"], name: "index_categories_on_user_id"
+  end
+
+  create_table "importance_settings", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.float "personal_weight", default: 2.0, null: false
+    t.float "emotional_weight", default: 3.0, null: false
+    t.float "family_weight", default: 2.0, null: false
+    t.integer "horizon_days", default: 30, null: false
+    t.float "urgency_weight", default: 15.0, null: false
+    t.integer "overdue_cap_days", default: 30, null: false
+    t.float "overdue_per_day", default: 2.0, null: false
+    t.float "time_penalty_per_level", default: 0.5, null: false
+    t.integer "time_penalty_max_level", default: 7, null: false
+    t.integer "quick_task_max_level", default: 0, null: false
+    t.float "quick_task_bonus", default: 10.0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "planner_morning_start_minute", default: 300, null: false
+    t.integer "planner_afternoon_start_minute", default: 720, null: false
+    t.integer "planner_evening_start_minute", default: 1080, null: false
+    t.string "timezone", default: "Central Time (US & Canada)", null: false
+    t.index ["user_id"], name: "index_importance_settings_on_user_id", unique: true
   end
 
   create_table "inventory_items", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -67,7 +90,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_09_000001) do
     t.integer "personal_impact", default: 0, null: false
     t.integer "emotional_impact", default: 0, null: false
     t.integer "family_impact", default: 0, null: false
-    t.integer "time_estimate_minutes", default: 0, null: false
+    t.integer "time_scale", default: 0, null: false
     t.integer "cost_cents", default: 0, null: false
     t.date "deadline"
     t.boolean "done", default: false, null: false
@@ -89,7 +112,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_09_000001) do
     t.index ["recurrence_day_of_month", "recurrence_month_of_year"], name: "idx_on_recurrence_day_of_month_recurrence_month_of__a778ad1e01"
     t.index ["recurrence_kind"], name: "index_items_on_recurrence_kind"
     t.index ["recurrence_unit", "recurrence_interval"], name: "index_items_on_recurrence_unit_and_recurrence_interval"
-    t.index ["time_estimate_minutes"], name: "index_items_on_time_estimate_minutes"
+    t.index ["time_scale"], name: "index_items_on_time_scale"
     t.index ["user_id"], name: "index_items_on_user_id"
   end
 
@@ -98,6 +121,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_09_000001) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.boolean "hidden", default: false, null: false
     t.index ["user_id", "name"], name: "idx_locations_user_name", unique: true
     t.index ["user_id"], name: "index_locations_on_user_id"
   end
@@ -122,6 +146,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_09_000001) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.boolean "hidden", default: false, null: false
     t.index ["user_id", "name"], name: "idx_moods_user_name", unique: true
     t.index ["user_id"], name: "index_moods_on_user_id"
   end
@@ -144,6 +169,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_09_000001) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.boolean "hidden", default: false, null: false
     t.index ["user_id", "name"], name: "idx_shops_user_name", unique: true
     t.index ["user_id"], name: "index_shops_on_user_id"
   end
@@ -157,6 +183,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_09_000001) do
   end
 
   add_foreign_key "categories", "users"
+  add_foreign_key "importance_settings", "users"
   add_foreign_key "inventory_items", "locations"
   add_foreign_key "inventory_items", "shops"
   add_foreign_key "inventory_items", "users"

@@ -10,8 +10,8 @@ class HomeController < ApplicationController
     f = current_filters
     @selected_mood_ids    = f[:mood_ids]
     @selected_category_id = f[:category_id]
-    #@minutes              = f[:minutes]
     @time_i               = f[:time_i]
+    @query                = f[:q]
     @sort                 = f[:sort]
     @per                  = f[:per]
     @filters = f
@@ -19,17 +19,23 @@ class HomeController < ApplicationController
     # --- base scope ---
     scope = Item.for_user(current_user)
       .includes(:category, :mood, :material_requirements)
-      .where(done: false)
-      .visible_on_list
-      .without_active_blockers
+
+    unless @query.present?
+      scope = scope.where(done: false)
+      scope = scope.visible_on_list
+      scope = scope.without_active_blockers
+    end
 
     scope = scope.where(mood_id: @selected_mood_ids) if @selected_mood_ids.any?
     scope = scope.where(category_id: @selected_category_id) if @selected_category_id.present?
-    # Apply the time cap from index (0..7). 7 = Forever (no cap).
-    scope = scope.where("time_estimate_minutes <= ?", @time_i) if @time_i < TIME_INDEX_LABELS.length - 1
+    if @query.present?
+      q = "%#{@query.downcase}%"
+      scope = scope.where("LOWER(title) LIKE ? OR LOWER(notes) LIKE ?", q, q)
+    end
+    scope = scope.where("time_scale <= ?", @time_i) if @time_i < TIME_INDEX_LABELS.length - 1
 
     @items = if @sort == "time"
-      scope.order(:time_estimate_minutes, deadline: :asc).to_a
+      scope.order(:time_scale, deadline: :asc).to_a
     else
       scope.to_a.sort_by { |it| -it.importance_score }
     end
@@ -52,9 +58,9 @@ class HomeController < ApplicationController
   private
 
   def load_lookups
-    @moods      = Mood.for_user(current_user).order(:name).to_a
-    @categories = Category.for_user(current_user).order(:name).to_a
-    @shops      = Shop.for_user(current_user).order(:name).to_a
+    @moods      = Mood.for_user(current_user).visible.order(:name).to_a
+    @categories = Category.for_user(current_user).visible.order(:name).to_a
+    @shops      = Shop.for_user(current_user).visible.order(:name).to_a
   end
 
 

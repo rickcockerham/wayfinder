@@ -33,5 +33,5 @@ class LocationsController < ApplicationController
 
   private
   def set_location; @location = Location.for_user(current_user).find(params[:id]); end
-  def location_params; params.require(:location).permit(:name); end
+  def location_params; params.require(:location).permit(:name, :hidden); end
 end

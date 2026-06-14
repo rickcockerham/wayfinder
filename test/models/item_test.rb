@@ -107,4 +107,82 @@ class ItemTest < ActiveSupport::TestCase
     assert item.visible_on_list?(today: Date.new(2026, 6, 15))
     assert item.visible_on_list?(today: Date.new(2026, 6, 21))
   end
+
+  test "importance_score uses user settings from the database" do
+    user = User.create!(name: "Test", access_key: "item-test-importance")
+    user.create_importance_setting!(
+      personal_weight: 10.0,
+      emotional_weight: 0.0,
+      family_weight: 0.0,
+      horizon_days: 30,
+      urgency_weight: 0.0,
+      overdue_cap_days: 30,
+      overdue_per_day: 0.0,
+      time_penalty_per_level: 0.0,
+      time_penalty_max_level: 7,
+      quick_task_max_level: 0,
+      quick_task_bonus: 0.0
+    )
+    category = user.categories.create!(name: "Test")
+    mood = user.moods.create!(name: "Test")
+
+    item = user.items.create!(
+      title: "Weighted item",
+      category: category,
+      mood: mood,
+      personal_impact: 3,
+      emotional_impact: 5,
+      family_impact: 5
+    )
+
+    assert_equal 30.0, item.importance_score
+  end
+
+  test "shorter tasks get a larger bump than longer short tasks" do
+    user = User.create!(name: "Test", access_key: "item-test-short-bump")
+    user.create_importance_setting!(
+      personal_weight: 0.0,
+      emotional_weight: 0.0,
+      family_weight: 0.0,
+      horizon_days: 30,
+      urgency_weight: 0.0,
+      overdue_cap_days: 30,
+      overdue_per_day: 0.0,
+      time_penalty_per_level: 0.0,
+      time_penalty_max_level: 7,
+      quick_task_max_level: 1,
+      quick_task_bonus: 3.0
+    )
+    category = user.categories.create!(name: "Test")
+    mood = user.moods.create!(name: "Test")
+
+    quick_item = user.items.create!(title: "Quick item", category: category, mood: mood, time_scale: 0)
+    minutes_item = user.items.create!(title: "Minutes item", category: category, mood: mood, time_scale: 1)
+    long_item = user.items.create!(title: "Long item", category: category, mood: mood, time_scale: 4)
+
+    assert_equal 3.0, quick_item.importance_score
+    assert_equal 1.5, minutes_item.importance_score
+    assert_equal 0.0, long_item.importance_score
+  end
+
+  test "time scale label maps stored scale to name" do
+    user = User.create!(name: "Test", access_key: "item-test-time-scale")
+    category = user.categories.create!(name: "Test")
+    mood = user.moods.create!(name: "Test")
+
+    item = user.items.create!(title: "Long task", category: category, mood: mood, time_scale: 4)
+
+    assert_equal "Weeks", item.time_scale_label
+  end
+
+  test "legacy minute values are normalized to a valid time scale on save" do
+    user = User.create!(name: "Test", access_key: "item-test-legacy-scale")
+    category = user.categories.create!(name: "Test")
+    mood = user.moods.create!(name: "Test")
+
+    item = user.items.new(title: "Legacy task", category: category, mood: mood, time_scale: 30)
+
+    assert item.save
+    assert_equal 0, item.time_scale
+  end
 end

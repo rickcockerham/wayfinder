@@ -34,4 +34,12 @@ class ApplicationController < ActionController::Base
   def current_user
     Current.user
   end
+
+  def visible_records(scope, current_id: nil)
+    return scope.order(:name).to_a unless scope.klass.column_names.include?("hidden")
+
+    visible_scope = scope.visible
+    visible_scope = visible_scope.or(scope.where(id: current_id)) if current_id.present?
+    visible_scope.order(:name).to_a
+  end
 end
