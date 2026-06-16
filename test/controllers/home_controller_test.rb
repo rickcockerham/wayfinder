@@ -57,6 +57,25 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, visible_in_due_window.title
   end
 
+  test "shows deadline items when hide_days is zero" do
+    category = categories(:default_category)
+    mood = moods(:default_mood)
+
+    visible_deadline = @user.items.create!(
+      title: "Future deadline on home",
+      category: category,
+      mood: mood,
+      done: false,
+      deadline: Date.current + 30.days,
+      hide_days: 0
+    )
+
+    get root_url, params: { per: 100 }
+
+    assert_response :success
+    assert_includes @response.body, visible_deadline.title
+  end
+
   test "searches item titles and notes" do
     category = categories(:default_category)
     mood = moods(:default_mood)

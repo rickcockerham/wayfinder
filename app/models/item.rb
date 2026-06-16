@@ -158,10 +158,12 @@ class Item < ApplicationRecord
     SQL
   }
 
+  #-----------------------------------------
   scope :visible_on_list, ->(today: Date.current) {
     t = table_name
+    hide_days_sql = "COALESCE(#{t}.hide_days, 0)"
     where(
-      "#{t}.deadline IS NULL OR DATEDIFF(#{t}.deadline, ?) < COALESCE(#{t}.hide_days, 0)",
+      "#{t}.deadline IS NULL OR #{hide_days_sql} <= 0 OR DATEDIFF(#{t}.deadline, ?) < #{hide_days_sql}",
       today
     )
   }
@@ -216,8 +218,10 @@ class Item < ApplicationRecord
     "#{description}."
   end
 
+  #-----------------------------------------
   def visible_on_list?(today: Date.current)
     return true if deadline.blank?
+    return true if hide_days.to_i <= 0
 
     (deadline - today).to_i < hide_days.to_i
   end

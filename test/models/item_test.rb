@@ -108,6 +108,25 @@ class ItemTest < ActiveSupport::TestCase
     assert item.visible_on_list?(today: Date.new(2026, 6, 21))
   end
 
+  test "visible_on_list keeps deadline items visible when hide_days is zero" do
+    user = User.create!(name: "Test", access_key: "item-test-hide-days-zero")
+    category = user.categories.create!(name: "Test")
+    mood = user.moods.create!(name: "Test")
+
+    item = user.items.create!(
+      title: "Visible deadline",
+      category: category,
+      mood: mood,
+      deadline: Date.new(2026, 7, 20),
+      hide_days: 0
+    )
+
+    visible_items = Item.for_user(user).visible_on_list(today: Date.new(2026, 6, 10)).to_a
+
+    assert item.visible_on_list?(today: Date.new(2026, 6, 10))
+    assert_includes visible_items, item
+  end
+
   test "importance_score uses user settings from the database" do
     user = User.create!(name: "Test", access_key: "item-test-importance")
     user.create_importance_setting!(
