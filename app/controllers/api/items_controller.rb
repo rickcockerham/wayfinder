@@ -20,7 +20,15 @@ module Api
       rows = current_user.items.where("id > ?", after_id.to_i).order(:id).limit(limit.to_i + 1).to_a
       more = rows.length > limit.to_i
       rows = rows.first(limit.to_i)
-      render json: { items: rows.map { |item| item.attributes.slice("id", "title", "category_id", "mood_id", "personal_impact", "emotional_impact", "family_impact", "deadline", "time_scale", "done") }, next_after_id: more ? rows.last.id : nil }
+      payload = { items: rows.map { |item| item.attributes.slice("id", "title", "category_id", "mood_id", "personal_impact", "emotional_impact", "family_impact", "deadline", "time_scale", "done") }, next_after_id: more ? rows.last.id : nil }
+      # Opt-in create metadata mirrors visible web choices without catalog routes.
+      if params[:include_choices] == "1"
+        payload[:choices] = {
+          categories: current_user.categories.visible.order(:name, :id).pluck(:id, :name).map { |id, name| { id: id, name: name } },
+          moods: current_user.moods.visible.order(:name, :id).pluck(:id, :name).map { |id, name| { id: id, name: name } }
+        }
+      end
+      render json: payload
     end
 
     # --------------------------------------------------------------------------

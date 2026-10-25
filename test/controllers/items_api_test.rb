@@ -168,4 +168,41 @@ class ItemsApiTest < ActionDispatch::IntegrationTest
     assert_not @item.reload.done?
     assert_nil @item.completed_at
   end
+  # --------------------------------------------------------------------------
+  test "item create choices include unused visible owned names only when requested" do
+    category = @user.categories.create!(name: "Unused category")
+    mood = @user.moods.create!(name: "Unused mood")
+    hidden_category = @user.categories.create!(name: "Hidden category", hidden: true)
+    hidden_mood = @user.moods.create!(name: "Hidden mood", hidden: true)
+    get "/api/items"
+    assert_not response.parsed_body.key?("choices")
+    get "/api/items", params: { include_choices: 1 }
+    assert_response :success
+    choices = response.parsed_body["choices"]
+    assert_includes choices["categories"], { "id" => category.id, "name" => category.name }
+    assert_includes choices["moods"], { "id" => mood.id, "name" => mood.name }
+    assert_not_includes choices["categories"].map { |row| row["id"] }, hidden_category.id
+    assert_not_includes choices["moods"].map { |row| row["id"] }, hidden_mood.id
+    assert_not_includes choices["categories"].map { |row| row["id"] }, @other_category.id
+    assert_not_includes choices["moods"].map { |row| row["id"] }, @other_mood.id
+    assert_equal ["id", "name"], choices["categories"].first.keys.sort
+    post "/api/items", params: { item: { title: "Assistant enriched task", category_id: category.id, mood_id: mood.id } }, as: :json
+    assert_response :created
+    assert_equal [category.id, mood.id, 0, 0, 0, nil], response.parsed_body["item"].values_at("category_id", "mood_id", "personal_impact", "emotional_impact", "family_impact", "deadline")
+  end
+
+  # --------------------------------------------------------------------------
+  test "create choices are available to an owner with no items and never anonymously" do
+    @other_item.destroy!
+    post login_url, params: { key: @other.access_key }
+    get "/api/items", params: { include_choices: 1 }
+    assert_response :success
+    assert_empty response.parsed_body["items"]
+    assert_equal [{ "id" => @other_category.id, "name" => @other_category.name }], response.parsed_body.dig("choices", "categories")
+    assert_equal [{ "id" => @other_mood.id, "name" => @other_mood.name }], response.parsed_body.dig("choices", "moods")
+    delete logout_url
+    get "/api/items", params: { include_choices: 1 }
+    assert_response :unauthorized
+    assert_not response.parsed_body.key?("choices")
+  end
 end

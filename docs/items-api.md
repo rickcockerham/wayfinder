@@ -1,7 +1,7 @@
 # Items API
 
 Local implementation for Rick to review and deploy. No migration or credential
-provisioning is required. Routes cover items only; no catalog, planner, shopping,
+provisioning is required. Routes cover items only; no catalog management, planner, shopping,
 inventory, blocker-management, settings or authentication API is added.
 
 ## Authentication
@@ -18,10 +18,11 @@ DELETE and retain the session cookies. All responses use `Cache-Control: no-stor
 A browser console example on the already authenticated Wayfinder origin:
 
 ```javascript
-const listing = await fetch('/api/items', { credentials: 'same-origin' });
+const listing = await fetch('/api/items?include_choices=1', { credentials: 'same-origin' });
 const csrf = listing.headers.get('X-CSRF-Token');
 const page = await listing.json();
-// Use your own existing category and mood IDs from an item or the web forms.
+// Choose the closest category and mood by task meaning from page.choices.
+// Preserve explicit user choices; the illustrative IDs below must be replaced.
 const result = await fetch('/api/items', {
   method: 'POST', credentials: 'same-origin',
   headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
@@ -39,6 +40,7 @@ session and CSRF support. No bearer-token access mechanism was introduced.
 | Method | Path | Response |
 | --- | --- | --- |
 | GET | `/api/items?limit=50&after_id=0` | `{items:[...],next_after_id:null}` |
+| GET | `/api/items?include_choices=1` | List plus `{choices:{categories:[{id,name}],moods:[{id,name}]}}` |
 | GET | `/api/items/:id` | `{item:{...}}` |
 | POST | `/api/items` | 201 `{item:{...}}` |
 | PATCH / PUT | `/api/items/:id` | 200 `{item:{...}}` |
@@ -75,10 +77,20 @@ ID, completion time and created/updated timestamps; no ownership or auth secrets
 
 "Individual priority" maps to the actual `personal_impact` column. Explicit
 values are preserved; omitted update fields are unchanged. A yearly specific
-date requires both month and day. Category/mood defaults are **not configured**
-in the application or seeds. Title-only creation therefore returns 422 until
-Rick chooses meaningful category/mood defaults; this API does not guess, create
-catalog entries or alter live settings.
+date requires both month and day. For title-only user requests, Rick authorizes
+the assistant to infer the closest existing category and mood from task meaning.
+Fetch `GET /api/items?include_choices=1` and choose from `choices.categories` and
+`choices.moods`, then submit the chosen IDs along with the title. This metadata
+contains only the owner's visible choices, including choices unused by any item,
+ordered by name then ID. It is available even when the item list is empty and is
+omitted unless requested, keeping normal reads compact. It adds no catalog CRUD
+routes. If either list is empty, report the missing prerequisite; do not invent
+IDs or create catalog records. Refresh choices if a concurrent change yields 422.
+
+Inference belongs to the assistant: the server does not classify text or select
+arbitrary defaults. Explicitly supplied category/mood values take precedence.
+Raw POST with a title alone still returns 422 because both associations are
+required. Priorities remain zero and deadline blank when omitted.
 
 Completion reuses `ItemCompletion` and `RecurrenceAdvancer`: reserved inventory
 is consumed once on false-to-true, recurring dates advance on the same item and
@@ -112,11 +124,13 @@ bin/test_items_api wayfinder_api_test_20261025_0925
 
 API tests cover unauthorized and cross-user access, revocation, CSRF, defaults,
 explicit values, pagination, validation, lifecycle and fixture-only hard deletion.
+Choice tests cover unused visible options, hidden/cross-user exclusion, empty item
+lists, anonymous denial and enriched capture with zero priorities/blank deadline.
 The ordinary Rails suite includes existing web and model regressions. Selenium
 system scaffolds have not been run: they assume unauthenticated access and do not
 supply required item fields. No browser dependency was installed.
 
 Rick: review and deploy this branch through the usual process, then use an
-existing authenticated session. Decide which category and mood should be used
-for title-only capture before promising that workflow. Any future new access
+existing authenticated session. The assistant can enrich title-only requests from
+the opt-in choices metadata as Rick authorized. Any future new access
 mechanism needs separate approval before provisioning credentials or enabling it.
