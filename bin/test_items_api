@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Run only on an explicitly selected disposable API database.
+if [[ $# != 1 || ! "$1" =~ ^wayfinder_api_test_[a-zA-Z0-9_]+$ ]]; then
+  echo "Usage: bin/test_items_api wayfinder_api_test_NAME" >&2
+  exit 2
+fi
+cd "$(dirname "$0")/.."
+export RAILS_ENV=test PARALLEL_WORKERS=1
+export DATABASE_URL="mysql2://pixie@aidb/$1"
+exec bundle exec rails test
