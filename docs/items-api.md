@@ -2,7 +2,8 @@
 
 Local implementation for Rick to review and deploy. No migration or credential
 provisioning is required. Routes cover items only; no catalog management, planner, shopping,
-inventory, blocker-management, settings or authentication API is added.
+blocker-management, settings or authentication API is added here. Physical inventory
+and nested location routes are documented separately in [inventory-api.md](inventory-api.md).
 
 ## Authentication
 

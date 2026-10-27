@@ -24,7 +24,7 @@
       <select name="location_id">
         <option value=""></option>
         <% @locations.each do |loc| %>
-        <option value="<%= loc.id %>" <%= "selected" if loc.id == @location_id %>><%= loc.name %></option>
+        <option value="<%= loc.id %>" <%= "selected" if loc.id == @location_id %>><%= loc.full_name %></option>
         <% end %>
       </select>
     </label>

@@ -31,4 +31,24 @@ class ShoppingControllerTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, visible_location.name
     assert_not_includes @response.body, hidden_location.name
   end
+# -----------------------------------------------------------------------------
+test "purchase respects the selected nested location without merging other stock" do
+  shop = @user.shops.create!(name: "Supplier")
+  root = @user.locations.create!(name: "Bins")
+  left = @user.locations.create!(name: "left", parent: root)
+  right = @user.locations.create!(name: "right", parent: root)
+  wrong = @user.inventory_items.create!(name: "Cable", location: left, shop: shop, qty_have: 7)
+  correct = @user.inventory_items.create!(name: "Cable", location: right, shop: shop, qty_have: 2)
+  requirement = @user.material_requirements.create!(item: items(:one), shop: shop, name: "Cable", qty_needed: 3)
+  post shopping_purchase_url, params: { shop_id: shop.id, location_id: right.id, purchase_ids: [requirement.id] }
+  assert_response :redirect
+  assert_equal 7, wrong.reload.qty_have
+  assert_equal 5, correct.reload.qty_have
+  assert_equal correct.id, items(:one).item_inventories.sole.inventory_item_id
+  get inventory_items_url
+  assert_includes response.body, "Bins → right"
+  get new_inventory_item_url
+  assert_includes response.body, "Bins → left"
+end
+
 end

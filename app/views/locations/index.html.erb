@@ -5,7 +5,7 @@
   <tr><th>Name</th><th>Hidden</th><th></th></tr>
   <% instance_variable_get("@#{controller_name}").each do |rec| %>
     <tr>
-      <td><%= link_to rec.name, rec %></td>
+      <td><%= link_to rec.full_name, rec %></td>
       <td><%= rec.hidden? ? "Yes" : "No" %></td>
       <td>
         <%= link_to "Edit", url_for([:edit, rec]) %> |

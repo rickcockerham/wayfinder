@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_14_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_27_000000) do
   create_table "categories", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.datetime "created_at", null: false
@@ -52,6 +52,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_000000) do
     t.datetime "updated_at", null: false
     t.bigint "shop_id"
     t.bigint "user_id", null: false
+    t.text "aliases"
     t.index ["location_id"], name: "index_inventory_items_on_location_id"
     t.index ["shop_id"], name: "index_inventory_items_on_shop_id"
     t.index ["user_id", "name", "location_id"], name: "idx_inventory_items_user_name_location", unique: true
@@ -121,7 +122,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_000000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.boolean "hidden", default: false, null: false
-    t.index ["user_id", "name"], name: "idx_locations_user_name", unique: true
+    t.bigint "parent_id"
+    t.virtual "parent_key", type: :bigint, as: "coalesce(`parent_id`,0)", stored: true
+    t.index ["parent_id"], name: "index_locations_on_parent_id"
+    t.index ["user_id", "parent_key", "name"], name: "idx_locations_sibling_name", unique: true
     t.index ["user_id"], name: "index_locations_on_user_id"
   end
 
@@ -196,6 +200,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_000000) do
   add_foreign_key "items", "items", column: "parent_id", on_delete: :nullify
   add_foreign_key "items", "moods"
   add_foreign_key "items", "users"
+  add_foreign_key "locations", "locations", column: "parent_id"
   add_foreign_key "locations", "users"
   add_foreign_key "material_requirements", "items", on_delete: :cascade
   add_foreign_key "material_requirements", "shops"

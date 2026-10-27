@@ -26,6 +26,7 @@ class ShoppingController < ApplicationController
     @reqs_by_item = @requirements.group_by(&:item)
   end
 
+  # -----------------------------------------------------------------------------
   def purchase
     shop_id     = params[:shop_id].presence&.to_i
     location_id = params[:location_id].presence&.to_i
@@ -37,7 +38,9 @@ class ShoppingController < ApplicationController
     MaterialRequirement.for_user(current_user).where(id: ids).includes(:item, :shop).find_each do |mr|
       # 1) Find or create inventory row (by name + optional location)
       rel = InventoryItem.for_user(current_user).where("LOWER(name)=?", mr.name.downcase)
-      #rel = location_id ? rel.where(location_id:) : rel.where(location_id: nil)
+      rel = rel.where(location_id: location&.id)
+      # Never silently merge legacy duplicate unlocated stock rows.
+      raise ActiveRecord::RecordNotUnique if rel.limit(2).count > 1
       inv = rel.first
 
       if inv
