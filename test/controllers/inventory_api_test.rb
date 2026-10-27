@@ -138,7 +138,7 @@ class InventoryApiTest < ActionDispatch::IntegrationTest
       end
     end
     base = { name: "Cable", location_id: @root.id, shop_id: @shop.id, unit: "", qty_have: "5" }
-    [{ qty_have: -1 }, { qty_have: "1.234" }, { qty_have: "100000000" }, { qty_have: "NaN" }, { qty_have: nil }, { qty_delta: "1" }, { user_id: @other.id }, { unit: [] }, { name: "" }].each do |change|
+    [{ qty_have: -1 }, { qty_have: "1.234" }, { qty_have: "100000000" }, { qty_have: "NaN" }, { qty_delta: "1" }, { user_id: @other.id }, { unit: [] }, { name: "" }].each do |change|
       assert_no_difference("InventoryItem.count") do
         put "/api/inventory_items", params: { inventory_item: base.merge(change) }, as: :json
         assert_response :unprocessable_entity
@@ -185,41 +185,144 @@ class InventoryApiTest < ActionDispatch::IntegrationTest
   ensure
     ActionController::Base.allow_forgery_protection = original
   end
-# -----------------------------------------------------------------------------
-test "assistant lookup finds names aliases full paths zero counts and missing records" do
-  row = @user.locations.create!(name: "first row", parent: @root)
-  bin = @user.locations.create!(name: "2nd bin", parent: row)
-  payload = { name: "DC-DC buck converters", aliases: ["step down modules"], location_id: bin.id, shop_id: @shop.id, unit: "each", qty_have: "0" }
-  put "/api/inventory_items", params: { inventory_item: payload }, as: :json
-  assert_response :created
-  id = response.parsed_body["inventory_item"]["id"]
-  ["buck", "step down modules"].each do |query|
-    get "/api/inventory_items", params: { q: query }
-    stock = response.parsed_body["inventory_items"].sole
-    assert_equal id, stock["id"]
-    assert_equal "0.0", stock["qty_have"]
-    assert_equal ["Electronics bins", "first row", "2nd bin"], stock["location"]["path"].map { |n| n["name"] }
-    assert_not stock.key?("user_id")
+  # -----------------------------------------------------------------------------
+  test "assistant lookup finds names aliases full paths zero counts and missing records" do
+    row = @user.locations.create!(name: "first row", parent: @root)
+    bin = @user.locations.create!(name: "2nd bin", parent: row)
+    payload = { name: "DC-DC buck converters", aliases: ["step down modules"], location_id: bin.id, shop_id: @shop.id, unit: "each", qty_have: "0" }
+    put "/api/inventory_items", params: { inventory_item: payload }, as: :json
+    assert_response :created
+    id = response.parsed_body["inventory_item"]["id"]
+    ["buck", "step down modules"].each do |query|
+      get "/api/inventory_items", params: { q: query }
+      stock = response.parsed_body["inventory_items"].sole
+      assert_equal id, stock["id"]
+      assert_equal "0.0", stock["qty_have"]
+      assert_equal ["Electronics bins", "first row", "2nd bin"], stock["location"]["path"].map { |n| n["name"] }
+      assert_not stock.key?("user_id")
+    end
+    get "/api/inventory_items", params: { q: "555 timers" }
+    assert_empty response.parsed_body["inventory_items"]
+    get "/api/inventory_items", params: { location_id: @root.id }
+    assert_empty response.parsed_body["inventory_items"]
+    # A stale recount cannot overwrite a newer count; repeats are safe no-ops.
+    put "/api/inventory_items", params: { inventory_item: payload.merge(qty_have: "8", expected_qty_have: "0") }, as: :json
+    assert_response :success
+    put "/api/inventory_items", params: { inventory_item: payload.merge(qty_have: "9", expected_qty_have: "0") }, as: :json
+    assert_response :conflict
+    assert_equal "stale_count", response.parsed_body["error"]
+    assert_equal 8, InventoryItem.find(id).qty_have
+    put "/api/inventory_items", params: { inventory_item: payload.merge(qty_have: "8", expected_qty_have: "0") }, as: :json
+    assert_response :success
+    put "/api/inventory_items", params: { inventory_item: payload.merge(qty_have: "9") }, as: :json
+    assert_response :conflict
+    put "/api/inventory_items", params: { inventory_item: payload.except(:qty_have) }, as: :json
+    assert_response :success
+    assert_equal "8.0", response.parsed_body["inventory_item"]["qty_have"]
+    put "/api/inventory_items", params: { inventory_item: payload.merge(aliases: [1]) }, as: :json
+    assert_response :unprocessable_entity
   end
-  get "/api/inventory_items", params: { q: "555 timers" }
-  assert_empty response.parsed_body["inventory_items"]
-  get "/api/inventory_items", params: { location_id: @root.id }
-  assert_empty response.parsed_body["inventory_items"]
-  # A stale recount cannot overwrite a newer count; repeats are safe no-ops.
-  put "/api/inventory_items", params: { inventory_item: payload.merge(qty_have: "8", expected_qty_have: "0") }, as: :json
-  assert_response :success
-  put "/api/inventory_items", params: { inventory_item: payload.merge(qty_have: "9", expected_qty_have: "0") }, as: :json
-  assert_response :conflict
-  assert_equal "stale_count", response.parsed_body["error"]
-  assert_equal 8, InventoryItem.find(id).qty_have
-  put "/api/inventory_items", params: { inventory_item: payload.merge(qty_have: "8", expected_qty_have: "0") }, as: :json
-  assert_response :success
-  put "/api/inventory_items", params: { inventory_item: payload.merge(qty_have: "9") }, as: :json
-  assert_response :conflict
-  put "/api/inventory_items", params: { inventory_item: payload.except(:qty_have) }, as: :json
-  assert_response :unprocessable_entity
-  put "/api/inventory_items", params: { inventory_item: payload.merge(aliases: [1]) }, as: :json
-  assert_response :unprocessable_entity
-end
+
+  # -----------------------------------------------------------------------------
+  test "presence-only capture preserves known counts and explicit null transitions are stale checked" do
+    post "/api/locations", params: { location: { root_id: @root.id, path: ["first row", "2nd bin"] } }, as: :json
+    location_id = response.parsed_body["location"]["id"]
+    payload = { name: "555 timers", aliases: ["NE555"], location_id: location_id, shop_id: @shop.id, unit: "each" }
+    put "/api/inventory_items", params: { inventory_item: payload }, as: :json
+    assert_response :created
+    assert_equal "record_presence", response.parsed_body["quantity_operation"]
+    stock = response.parsed_body["inventory_item"]
+    id = stock["id"]
+    assert_nil stock["qty_have"]
+    assert_equal "unknown", stock["quantity_status"]
+    assert_equal ["Electronics bins", "first row", "2nd bin"], stock["location"]["path"].map { |n| n["name"] }
+    assert_no_difference("InventoryItem.count") do
+      put "/api/inventory_items", params: { inventory_item: payload }, as: :json
+      assert_response :success
+      assert_equal "preserve", response.parsed_body["quantity_operation"]
+      assert_nil response.parsed_body["inventory_item"]["qty_have"]
+    end
+    get "/api/inventory_items", params: { q: "NE555" }
+    assert_equal [id], response.parsed_body["inventory_items"].map { |s| s["id"] }
+    get "/api/inventory_items/#{id}"
+    assert_equal "unknown", response.parsed_body["inventory_item"]["quantity_status"]
+    # Explicit null also creates an unknown presence record rather than numeric zero.
+    put "/api/inventory_items", params: { inventory_item: payload.merge(name: "Unknown comparator", qty_have: nil) }, as: :json
+    assert_response :created
+    assert_equal "record_presence", response.parsed_body["quantity_operation"]
+    assert_nil response.parsed_body["inventory_item"]["qty_have"]
+    # An absent expectation and an explicit unknown expectation are distinct.
+    put "/api/inventory_items", params: { inventory_item: payload.merge(qty_have: "5") }, as: :json
+    assert_response :conflict
+    put "/api/inventory_items", params: { inventory_item: payload.merge(qty_have: "5", expected_qty_have: nil) }, as: :json
+    assert_response :success
+    assert_equal "set", response.parsed_body["quantity_operation"]
+    assert_equal "positive", response.parsed_body["inventory_item"]["quantity_status"]
+    2.times do
+      put "/api/inventory_items", params: { inventory_item: payload }, as: :json
+      assert_response :success
+      assert_equal "5.0", response.parsed_body["inventory_item"]["qty_have"]
+      assert_equal "preserve", response.parsed_body["quantity_operation"]
+    end
+    put "/api/inventory_items", params: { inventory_item: payload.merge(qty_have: nil) }, as: :json
+    assert_response :conflict
+    put "/api/inventory_items", params: { inventory_item: payload.merge(qty_have: nil, expected_qty_have: "4") }, as: :json
+    assert_response :conflict
+    put "/api/inventory_items", params: { inventory_item: payload.merge(qty_have: nil, expected_qty_have: "5") }, as: :json
+    assert_response :success
+    assert_equal "clear_to_unknown", response.parsed_body["quantity_operation"]
+    assert_nil response.parsed_body["inventory_item"]["qty_have"]
+    put "/api/inventory_items", params: { inventory_item: payload.merge(qty_have: "0", expected_qty_have: "5") }, as: :json
+    assert_response :conflict
+    put "/api/inventory_items", params: { inventory_item: payload.merge(qty_have: "0", expected_qty_have: nil) }, as: :json
+    assert_response :success
+    assert_equal "zero", response.parsed_body["inventory_item"]["quantity_status"]
+    put "/api/inventory_items", params: { inventory_item: payload }, as: :json
+    assert_equal "0.0", response.parsed_body["inventory_item"]["qty_have"]
+    assert_equal 1, @user.inventory_items.where(name: "555 timers").count
+  end
+
+  # -----------------------------------------------------------------------------
+  test "totals separate units and unknown portions across all filtered pages and owners" do
+    locations = 4.times.map { |i| @user.locations.create!(name: "Summary #{i}", parent: @root) }
+    [nil, 0, 2.5].zip(locations).each do |qty, location|
+      @user.inventory_items.create!(name: "Timers", location: location, shop: @shop, unit: "each", qty_have: qty)
+    end
+    @user.inventory_items.create!(name: "Timers", location: locations.last, shop: @shop, unit: "box", qty_have: 3)
+    @other.inventory_items.create!(name: "Timers", shop: @other_shop, unit: "each", qty_have: nil)
+    get "/api/inventory_items", params: { q: "Timers", include_totals: 1, limit: 1 }
+    assert_response :success
+    assert_equal 1, response.parsed_body["inventory_items"].size
+    totals = response.parsed_body["totals"]
+    each = totals.find { |row| row["unit"] == "each" }
+    assert_equal "2.5", each["known_quantity"]
+    assert_equal 2, each["known_rows"]
+    assert_equal 1, each["unknown_rows"]
+    assert_equal false, each["complete"]
+    assert_equal true, totals.find { |row| row["unit"] == "box" }["complete"]
+    get "/api/inventory_items", params: { location_id: locations.first.id, include_totals: 1 }
+    assert_nil response.parsed_body["totals"].sole["known_quantity"]
+    assert_equal 1, response.parsed_body["totals"].sole["unknown_rows"]
+    get "/api/inventory_items", params: { q: "Not recorded", include_totals: 1 }
+    assert_empty response.parsed_body["inventory_items"]
+    assert_empty response.parsed_body["totals"]
+  end
+
+  # -----------------------------------------------------------------------------
+  test "unknown captures and count clears cannot access foreign stock locations or shops" do
+    payload = { name: "Present part", location_id: @root.id, shop_id: @shop.id, unit: "each" }
+    [{ id: @other_stock.id }, { location_id: @other_location.id }, { shop_id: @other_shop.id }].each do |change|
+      [payload, payload.merge(qty_have: nil, expected_qty_have: "0")].each do |input|
+        assert_no_difference("InventoryItem.count") do
+          put "/api/inventory_items", params: { inventory_item: input.merge(change) }, as: :json
+          assert_response :not_found
+        end
+      end
+    end
+    assert_equal 0, @other_stock.reload.qty_have
+    delete logout_url
+    put "/api/inventory_items", params: { inventory_item: payload }, as: :json
+    assert_response :unauthorized
+  end
 
 end

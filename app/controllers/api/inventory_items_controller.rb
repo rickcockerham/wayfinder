@@ -19,6 +19,15 @@ module Api
       if params[:include_choices] == "1"
         payload[:shops] = current_user.shops.visible.order(:name, :id).pluck(:id, :name).map { |id, name| { id: id, name: name } }
       end
+      # Totals cover all filtered matches, not just this page; unknown portions stay explicit.
+      if params[:include_totals] == "1"
+        payload[:totals] = scope.except(:includes).group(:name, :unit).order(:name, :unit).pluck(
+          :name, :unit, Arel.sql("SUM(qty_have)"), Arel.sql("COUNT(qty_have)"), Arel.sql("COUNT(*) - COUNT(qty_have)")
+        ).map do |name, unit, total, known_rows, unknown_rows|
+          { name: name, unit: unit, known_quantity: total&.to_s("F"), known_rows: known_rows,
+            unknown_rows: unknown_rows, complete: unknown_rows.zero? }
+        end
+      end
       render json: payload
     end
 
@@ -37,8 +46,8 @@ module Api
           input.key?(:location_id) && (input[:location_id].nil? || valid_id?(input[:location_id])) &&
           (!input.key?(:id) || valid_id?(input[:id])) &&
           (!input.key?(:aliases) || (input[:aliases].is_a?(Array) && input[:aliases].all? { |name| name.is_a?(String) && name.present? && name.length <= 255 && name == name.strip })) &&
-          decimal_count?(input[:qty_have]) &&
-          (!input.key?(:expected_qty_have) || decimal_count?(input[:expected_qty_have]))
+          (!input.key?(:qty_have) || input[:qty_have].nil? || decimal_count?(input[:qty_have])) &&
+          (!input.key?(:expected_qty_have) || input[:expected_qty_have].nil? || decimal_count?(input[:expected_qty_have]))
         return render json: { error: "validation_failed" }, status: :unprocessable_entity
       end
       row = nil
@@ -59,17 +68,26 @@ module Api
         row ||= current_user.inventory_items.new(name: input[:name], location: location, shop: shop, unit: input[:unit])
         row.with_lock do
           return conflict unless row.shop_id == shop.id && row.unit == input[:unit]
-          # A repeated desired count is a no-op. Changes require the last observed count.
-          unless created || row.qty_have == BigDecimal(input[:qty_have]) ||
-              (input.key?(:expected_qty_have) && row.qty_have == BigDecimal(input[:expected_qty_have]))
+          # Omission records presence for new stock, but never erases an existing count.
+          desired = input.key?(:qty_have) ? input[:qty_have]&.then { |value| BigDecimal(value) } : (created ? nil : row.qty_have)
+          expected = input[:expected_qty_have]&.then { |value| BigDecimal(value) }
+          unless created || row.qty_have == desired ||
+              (input.key?(:expected_qty_have) && row.qty_have == expected)
             return render json: { error: "stale_count", inventory_item: inventory_json(row) }, status: :conflict
           end
-          attributes = { qty_have: input[:qty_have] }
+          attributes = { qty_have: desired }
           attributes[:aliases] = input[:aliases].uniq if input.key?(:aliases)
-          row.update!(attributes) if created || row.qty_have != BigDecimal(input[:qty_have]) || attributes.key?(:aliases)
+          row.update!(attributes) if created || row.qty_have != desired || attributes.key?(:aliases)
         end
       end
-      render json: { inventory_item: inventory_json(row), quantity_operation: "set" }, status: created ? :created : :ok
+      operation = if !input.key?(:qty_have)
+                    created ? "record_presence" : "preserve"
+                  elsif input[:qty_have].nil?
+                    created ? "record_presence" : "clear_to_unknown"
+                  else
+                    "set"
+                  end
+      render json: { inventory_item: inventory_json(row), quantity_operation: operation }, status: created ? :created : :ok
     end
 
     private
@@ -82,7 +100,8 @@ module Api
     # -----------------------------------------------------------------------------
     def inventory_json(row)
       row.attributes.slice("id", "name", "unit", "shop_id", "location_id").merge(
-        "aliases" => row.aliases, "qty_have" => row.qty_have.to_s("F"), "location" => row.location && location_json(row.location))
+        "aliases" => row.aliases, "qty_have" => row.qty_have&.to_s("F"),
+        "quantity_status" => row.qty_have.nil? ? "unknown" : (row.qty_have.zero? ? "zero" : (row.qty_have.positive? ? "positive" : "negative")), "location" => row.location && location_json(row.location))
     end
   end
 end

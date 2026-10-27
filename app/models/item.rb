@@ -44,9 +44,14 @@ class Item < ApplicationRecord
     "Forever"
   ].freeze
 
+  # -----------------------------------------------------------------------------
   def missing_materials_by(inventory_hash)
     material_requirements.filter_map do |mr|
-      have = inventory_hash[mr.name.downcase]&.qty_have.to_f
+      inventory = Array.wrap(inventory_hash[mr.name.downcase]).select { |row| row.unit.to_s == mr.unit.to_s }
+      if inventory.any? { |row| row.qty_have.nil? }
+        next { name: mr.name, short: nil, unit: mr.unit, shop: mr.shop&.name, quantity_unknown: true }
+      end
+      have = inventory.sum { |row| row.qty_have.to_f }
       short = mr.qty_needed.to_f - have
       short > 0 ? { name: mr.name, short:, unit: mr.unit, shop: mr.shop&.name } : nil
     end

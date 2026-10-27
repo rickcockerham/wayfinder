@@ -15,8 +15,9 @@ class Selector
     @user = user
   end
 
+  # -----------------------------------------------------------------------------
   def call
-    inv = InventoryItem.for_user(@user).includes(:location).index_by { |i| i.name.downcase }
+    inv = InventoryItem.for_user(@user).includes(:location).group_by { |i| i.name.downcase }
 
     scope = Item.for_user(@user).includes(:category, :mood, :blockers, :material_requirements).where(done: false).visible_on_list
     scope = scope.joins(:category).where(categories: { name: @category }) if @category.present?

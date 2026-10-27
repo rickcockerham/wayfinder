@@ -56,7 +56,7 @@
       <tr>
         <td><%= inv.name %></td>
         <td><%= inv.unit %></td>
-        <td><%= inv.qty_have %></td>
+        <td><%= inv.qty_have.nil? ? "Unknown" : inv.qty_have %></td>
         <td>
           <input type="number" name="quantities[<%= inv.id %>]" min="0" step="1" value="0" style="width:6rem;">
         </td>

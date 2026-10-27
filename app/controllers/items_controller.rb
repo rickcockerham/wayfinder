@@ -4,6 +4,7 @@ class ItemsController < ApplicationController
   before_action :set_item, only: %i[show edit update destroy materials materials_post]
   before_action :load_form_collections, only: %i[new edit create update]
 
+  # -----------------------------------------------------------------------------
   def index
     f = current_filters
 
@@ -15,7 +16,7 @@ class ItemsController < ApplicationController
     items  = scope.includes(:material_requirements, :blockers, :blocks).to_a
     scores = MaxCascadeImportance.new(items).call
     @items = DependencyOrder.new(items, importance_map: scores).call
-    @inventory_by_name = InventoryItem.for_user(current_user).index_by { |i| i.name.downcase }
+    @inventory_by_name = InventoryItem.for_user(current_user).group_by { |i| i.name.downcase }
     @filters = f
   end
 
@@ -40,6 +41,7 @@ class ItemsController < ApplicationController
     end
   end
 
+  # -----------------------------------------------------------------------------
   def update
   was_done = @item.done?
   if @item.update(item_params)
@@ -57,7 +59,7 @@ class ItemsController < ApplicationController
         if result.respond_to?(:deficits) && result.deficits.present?
           missing = result.deficits.map { |d|
             unit = d[:unit].presence ? " #{d[:unit]}" : ""
-            "#{d[:name]} (short #{d[:shortage]}#{unit})"
+            d[:quantity_unknown] ? "#{d[:name]} (quantity unknown; recount needed)" : "#{d[:name]} (short #{d[:shortage]}#{unit})"
           }.join(", ")
           messages << "Inventory short on: #{missing}."
         end

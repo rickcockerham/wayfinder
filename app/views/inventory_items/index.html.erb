@@ -9,7 +9,7 @@
   <% @inventory_items.each do |ii| %>
     <tr>
       <td><%= link_to ii.name, edit_inventory_item_path(ii) %></td>
-      <td><%= ii.qty_have %></td>
+      <td><%= ii.qty_have.nil? ? "Unknown" : ii.qty_have %></td>
       <td><%= ii.location&.full_name %></td>
       <td>
         <%= link_to "Destroy", ii, method: :delete, data: { confirm: "Delete?" } %>

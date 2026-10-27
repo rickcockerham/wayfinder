@@ -44,7 +44,7 @@ class ShoppingController < ApplicationController
       inv = rel.first
 
       if inv
-        inv.update!(qty_have: inv.qty_have.to_f + mr.qty_needed.to_f, shop: shop || mr.shop)
+        inv.update!(qty_have: inv.qty_have.nil? ? nil : inv.qty_have + mr.qty_needed, shop: shop || mr.shop)
       else
         inv = InventoryItem.create!(
           user: current_user,

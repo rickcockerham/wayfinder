@@ -3,10 +3,11 @@ class InventoryItemsController < ApplicationController
   before_action :set_inventory_item, only: %i[show edit update destroy]
   before_action :load_form_collections, only: %i[new edit create update]
 
+  # -----------------------------------------------------------------------------
   def index
     @inventory_items = InventoryItem.for_user(current_user).includes(:location).order(:name)
     if !params[:zeros]
-      @inventory_items = @inventory_items.where("qty_have > 0")
+      @inventory_items = @inventory_items.where("qty_have > 0 OR qty_have IS NULL")
     end
   end
 
@@ -45,8 +46,14 @@ class InventoryItemsController < ApplicationController
     @inventory_item = InventoryItem.for_user(current_user).find(params[:id])
   end
 
+  # -----------------------------------------------------------------------------
   def inventory_item_params
-    params.require(:inventory_item).permit(:name, :qty_have, :unit, :location_id, :shop_id)
+    input = params.require(:inventory_item)
+    attributes = input.permit(:name, :qty_have, :unit, :location_id, :shop_id)
+    # A blank form field preserves the count; only the explicit checkbox clears it.
+    attributes.delete(:qty_have) if attributes[:qty_have].blank?
+    attributes[:qty_have] = nil if input[:quantity_unknown] == "1"
+    attributes
   end
 
   def load_form_collections
