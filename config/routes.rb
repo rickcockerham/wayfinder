@@ -1,4 +1,8 @@
 Rails.application.routes.draw do
+  namespace :api, defaults: { format: :json } do
+    resources :items, only: %i[index show create update destroy]
+  end
+
 
   root "home#index"
   resource :importance_setting, only: [:show, :update]
