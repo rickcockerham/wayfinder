@@ -1,5 +1,5 @@
 # Wayfinder Time Manager
-## A project management app for INTP people
+## A project management app for ADHD/INTP people
 
 A tiny Rails app to help you decide **what to do today**.
 
