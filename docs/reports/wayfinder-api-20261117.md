@@ -47,3 +47,5 @@ exception classes. Raw credentials, query strings and bodies are excluded.
 Private operational evidence remains under `/var/backups/wayfinder-api-20261117/`
 on the server and `/tmp/wayfinder-live-bearer-20261117/` locally. The deployment
 uses the existing SSH access and service credentials without exposing them.
+The [historical verification and cleanup scripts](../../scripts/tmp/wayfinder-api-20261117/README.md)
+are retained for review; their fixed test IDs make them unsuitable for blind reruns.
