@@ -19,10 +19,12 @@ class InventoryItem < ApplicationRecord
 
   private
 
+  #-----------------------------------------------------------------------------
   def location_belongs_to_user
     validate_associated_user(:location)
   end
 
+  #-----------------------------------------------------------------------------
   def shop_belongs_to_user
     validate_associated_user(:shop)
   end

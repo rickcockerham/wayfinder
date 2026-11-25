@@ -224,7 +224,14 @@ Migration `20261027010000` makes qty_have
 nullable without updating existing values or changing the legacy zero default.
 Its rollback refuses unknown counts rather than converting them to zero. MySQL 8
 was used for validation; schema dump is generated from a disposable test database.
-Approval is still required to deploy/run these migrations on live Wayfinder.
+These migrations have not been run on live Wayfinder by this change.
+
+After merging the PR, run `RAILS_ENV=production bundle exec rails db:migrate`
+from the existing production checkout before restarting Wayfinder. The existing
+`update.sh` rebuilds assets and restarts the service but does not run migrations.
+Both pending `20261027...` migrations must run even though the latest previously
+applied migration is dated November 17. Keep the existing bearer configuration.
+Rick will merge and deploy this change for live testing.
 
 From this checkout run `bin/test_items_api wayfinder_api_test_NAME` against a
 separately provisioned disposable database only. The runner uses the existing

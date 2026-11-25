@@ -5,13 +5,13 @@ require "openssl"
 
 # Keep the reusable credential outside the checkout and out of process arguments.
 config_path = File.expand_path(ENV.fetch("WAYFINDER_API_CONFIG", "~/.config/wayfinder/api.json"))
-usage = "Usage: bin/wayfinder-api [get|post|patch|put|delete] [/api/{items,locations,inventory_items}[/ID][?query]] [payload.json|-]"
+usage = "Usage: bin/wayfinder-api [get|post|patch|put|delete] [/api/items[/ID|/priorities]|/api/{locations,inventory_items}[/ID]][?query] [payload.json|-]"
 method = ARGV.fetch(0, "get").downcase
 path = ARGV.fetch(1, "/api/items")
 request_classes = { "get" => Net::HTTP::Get, "post" => Net::HTTP::Post, "patch" => Net::HTTP::Patch, "put" => Net::HTTP::Put, "delete" => Net::HTTP::Delete }
 abort usage unless request_classes.key?(method) && ARGV.length <= 3
-# Extend the fixed-origin allowlist to the existing inventory and location routes.
-abort "Only relative items, locations and inventory_items API endpoints are supported" unless path.match?(%r{\A/api/(?:items|locations|inventory_items)(?:/[1-9]\d*)?(?:\?[^\s#]*)?\z})
+# Allow priorities only for tasks while retaining the fixed-origin inventory routes.
+abort "Only relative items, locations and inventory_items API endpoints are supported" unless path.match?(%r{\A/api/(?:items(?:/priorities|/[1-9]\d*)?|(?:locations|inventory_items)(?:/[1-9]\d*)?)(?:\?[^\s#]*)?\z})
 writing = %w[post patch put].include?(method)
 abort usage if writing != (ARGV.length == 3)
 

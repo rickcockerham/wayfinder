@@ -1,6 +1,6 @@
 module Api
   class LocationsController < InventoryBaseController
-    # -----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     def index
       scope = current_user.locations
       scope = scope.where(name: params[:name]) if params[:name].present?
@@ -14,13 +14,13 @@ module Api
       render json: { locations: rows.map { |row| location_json(row) }, next_after_id: cursor }
     end
 
-    # -----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     def show
       location = current_user.locations.find(params[:id])
       render json: { location: location_json(location) }
     end
 
-    # -----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     def create
       input = json_input(:location, %w[root_id path])
       return if performed?

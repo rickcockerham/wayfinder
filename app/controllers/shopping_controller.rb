@@ -1,6 +1,7 @@
 # coding: utf-8
 # app/controllers/shopping_controller.rb
 class ShoppingController < ApplicationController
+  #-----------------------------------------------------------------------------
   def index
     @shops     = Shop.for_user(current_user).visible.order(:name).to_a
     @locations = Location.for_user(current_user).visible.order(:name).to_a
@@ -26,7 +27,7 @@ class ShoppingController < ApplicationController
     @reqs_by_item = @requirements.group_by(&:item)
   end
 
-  # -----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   def purchase
     shop_id     = params[:shop_id].presence&.to_i
     location_id = params[:location_id].presence&.to_i

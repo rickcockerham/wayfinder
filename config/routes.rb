@@ -3,7 +3,9 @@ Rails.application.routes.draw do
     resources :locations, only: %i[index show create]
     resources :inventory_items, only: %i[index show]
     put "inventory_items", to: "inventory_items#set_count"
-    resources :items, only: %i[index show create update destroy]
+    resources :items, only: %i[index show create update destroy] do
+      get :priorities, on: :collection
+    end
   end
 
 

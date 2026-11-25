@@ -44,7 +44,7 @@ class Item < ApplicationRecord
     "Forever"
   ].freeze
 
-  # -----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   def missing_materials_by(inventory_hash)
     material_requirements.filter_map do |mr|
       inventory = Array.wrap(inventory_hash[mr.name.downcase]).select { |row| row.unit.to_s == mr.unit.to_s }
@@ -57,10 +57,12 @@ class Item < ApplicationRecord
     end
   end
 
+  #-----------------------------------------------------------------------------
   def ready_now?(inventory_hash:)
     unresolved_blockers.none? && missing_materials_by(inventory_hash).empty? && !done?
   end
 
+  #-----------------------------------------------------------------------------
   def reactivate_blockers!(visited_ids = [])
     return if visited_ids.include?(id)
     visited_ids << id
@@ -71,6 +73,7 @@ class Item < ApplicationRecord
     end
   end
 
+  #-----------------------------------------------------------------------------
   def importance_score(today: Date.current)
     settings = importance_settings
     h  = settings.horizon_days.to_f
@@ -106,6 +109,7 @@ class Item < ApplicationRecord
     (impact + upcoming + overdue + time_penalty + quick).round(3)
   end
 
+  #-----------------------------------------------------------------------------
   def self.importance_sql(today: Date.current, settings: ImportanceSetting.new(ImportanceSetting.default_attributes))
     t  = table_name # "items"
     d  = "DATEDIFF(#{t}.deadline, '#{today}')"
@@ -163,7 +167,7 @@ class Item < ApplicationRecord
     SQL
   }
 
-  #-----------------------------------------
+  #-----------------------------------------------------------------------------
   scope :visible_on_list, ->(today: Date.current) {
     t = table_name
     hide_days_sql = "COALESCE(#{t}.hide_days, 0)"
@@ -184,6 +188,7 @@ class Item < ApplicationRecord
   validates :recurrence_month_of_year, inclusion: { in: 1..12 }, allow_nil: true
   validate  :validate_rule_combination
 
+  #-----------------------------------------------------------------------------
   def validate_rule_combination
     # If a yearly specific date is desired, both month & day should be present
     if recurrence_unit == "year" && recurrence_month_of_year.present? ^ recurrence_day_of_month.present?
@@ -191,22 +196,27 @@ class Item < ApplicationRecord
     end
   end
 
+  #-----------------------------------------------------------------------------
   def inherit_user_from_associations
     self.user ||= category&.user || mood&.user || parent&.user
   end
 
+  #-----------------------------------------------------------------------------
   def category_belongs_to_user
     validate_associated_user(:category)
   end
 
+  #-----------------------------------------------------------------------------
   def mood_belongs_to_user
     validate_associated_user(:mood)
   end
 
+  #-----------------------------------------------------------------------------
   def parent_belongs_to_user
     validate_associated_user(:parent)
   end
 
+  #-----------------------------------------------------------------------------
   def recurrence_schedule_description
     return nil if no_recurrence?
 
@@ -223,7 +233,7 @@ class Item < ApplicationRecord
     "#{description}."
   end
 
-  #-----------------------------------------
+  #-----------------------------------------------------------------------------
   def visible_on_list?(today: Date.current)
     return true if deadline.blank?
     return true if hide_days.to_i <= 0
@@ -231,14 +241,17 @@ class Item < ApplicationRecord
     (deadline - today).to_i < hide_days.to_i
   end
 
+  #-----------------------------------------------------------------------------
   def importance_settings
     user&.importance_setting || ImportanceSetting.new(ImportanceSetting.default_attributes)
   end
 
+  #-----------------------------------------------------------------------------
   def time_scale_label
     TIME_SCALE_LABELS[time_scale.to_i] || "Unknown"
   end
 
+  #-----------------------------------------------------------------------------
   def self.normalize_time_scale_value(value)
     level = value.to_i
     return level if (0..7).cover?(level)
@@ -256,6 +269,7 @@ class Item < ApplicationRecord
   # === Recurrence calculators ===
 
   # For Type 1 (fixed_schedule): schedule strictly by the prior scheduled deadline
+  #-----------------------------------------------------------------------------
   def next_deadline_from_schedule
     base = deadline
     return nil if base.nil? || no_recurrence?
@@ -269,6 +283,7 @@ class Item < ApplicationRecord
   end
 
   # For Type 2 (after_completion): schedule from when you actually finished
+  #-----------------------------------------------------------------------------
   def next_deadline_from_completion(completed_on: (completed_at&.to_date || Date.current))
     return nil if no_recurrence?
     RecurrenceRules.next_occurrence(
@@ -282,6 +297,7 @@ class Item < ApplicationRecord
 
   private
 
+  #-----------------------------------------------------------------------------
   def normalize_time_scale
     self.time_scale = self.class.normalize_time_scale_value(time_scale)
   end

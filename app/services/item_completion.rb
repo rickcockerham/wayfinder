@@ -3,6 +3,7 @@
 class ItemCompletion
   Result = Struct.new(:consumed_lines, :deficits)
 
+  #-----------------------------------------------------------------------------
   def initialize(item)
     @item = item
   end
@@ -11,7 +12,7 @@ class ItemCompletion
   # Returns Result with:
   #   consumed_lines: count of ItemInventory lines processed
   #   deficits: shortage amounts, or quantity_unknown with nil shortage for uncounted stock
-  # -----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   def consume!
     res = Result.new(0, [])
 

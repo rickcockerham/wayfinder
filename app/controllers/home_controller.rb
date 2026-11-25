@@ -5,7 +5,7 @@ class HomeController < ApplicationController
 
   before_action :load_lookups
 
-  # -----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   def index
     # --- read params / defaults via persistence ---
     f = current_filters
@@ -17,29 +17,8 @@ class HomeController < ApplicationController
     @per                  = f[:per]
     @filters = f
 
-    # --- base scope ---
-    scope = Item.for_user(current_user)
-      .includes(:category, :mood, :material_requirements)
-
-    unless @query.present?
-      scope = scope.where(done: false)
-      scope = scope.visible_on_list
-      scope = scope.without_active_blockers
-    end
-
-    scope = scope.where(mood_id: @selected_mood_ids) if @selected_mood_ids.any?
-    scope = scope.where(category_id: @selected_category_id) if @selected_category_id.present?
-    if @query.present?
-      q = "%#{@query.downcase}%"
-      scope = scope.where("LOWER(title) LIKE ? OR LOWER(notes) LIKE ?", q, q)
-    end
-    scope = scope.where("time_scale <= ?", @time_i) if @time_i < TIME_INDEX_LABELS.length - 1
-
-    @items = if @sort == "time"
-      scope.order(:time_scale, deadline: :asc).to_a
-    else
-      scope.to_a.sort_by { |it| -it.importance_score }
-    end
+    # Use the same selection as the read-only priorities API.
+    @items = HomeItemSelection.new(current_user, f).call
 
     @top_items = @items.first(@per)
 
@@ -58,6 +37,7 @@ class HomeController < ApplicationController
 
   private
 
+  #-----------------------------------------------------------------------------
   def load_lookups
     @moods      = Mood.for_user(current_user).visible.order(:name).to_a
     @categories = Category.for_user(current_user).visible.order(:name).to_a
@@ -66,7 +46,7 @@ class HomeController < ApplicationController
 
 
   # Aggregate shortages across the CURRENT top items for one vendor.
-  # -----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   def build_shopping_list(items, inventory_hash, shop_id)
     need = Hash.new { |h, k| h[k] = { name: k[0], unit: k[1], needed: 0.0 } }
 

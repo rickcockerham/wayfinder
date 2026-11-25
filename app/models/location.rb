@@ -9,7 +9,7 @@ class Location < ApplicationRecord
     uniqueness: { scope: [:user_id, :parent_id], case_sensitive: false }
   validate :valid_parent
 
-  # -----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   def path
     # Walk iteratively so depth is unrelated to the Ruby call stack.
     nodes = []
@@ -24,14 +24,14 @@ class Location < ApplicationRecord
     nodes
   end
 
-  # -----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   def full_name
     path.map { |node| node[:name] }.join(" → ")
   end
 
   private
 
-  # -----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   def valid_parent
     validate_associated_user(:parent)
     # Immutable ancestry prevents concurrent reparenting from introducing cycles.

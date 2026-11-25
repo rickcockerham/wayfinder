@@ -1,6 +1,6 @@
 module Api
   class InventoryItemsController < InventoryBaseController
-    # -----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     def index
       scope = current_user.inventory_items.includes(:location)
       if params[:q].present?
@@ -31,12 +31,12 @@ module Api
       render json: payload
     end
 
-    # -----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     def show
       render json: { inventory_item: inventory_json(current_user.inventory_items.find(params[:id])) }
     end
 
-    # -----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     def set_count
       input = json_input(:inventory_item, %w[id name aliases location_id shop_id unit qty_have expected_qty_have])
       return if performed?
@@ -92,12 +92,12 @@ module Api
 
     private
 
-    # -----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     def decimal_count?(value)
       value.is_a?(String) && value.match?(/\A(?:0|[1-9]\d{0,7})(?:\.\d{1,2})?\z/)
     end
 
-    # -----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     def inventory_json(row)
       row.attributes.slice("id", "name", "unit", "shop_id", "location_id").merge(
         "aliases" => row.aliases, "qty_have" => row.qty_have&.to_s("F"),
