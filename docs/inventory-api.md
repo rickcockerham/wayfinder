@@ -240,6 +240,16 @@ MySQL account and never selects development/production. Initial test setup:
 The runner executes the complete ordinary Rails suite. Browser/Selenium system
 scaffolding is separate. No live migrations or live API calls are needed to test.
 
+Final bearer integration validation on November 25 used the disposable database
+`wayfinder_api_test_morgana_20261125`: 106 tests, 1,521 assertions, no failures,
+errors or skips. This includes the current morning-priorities API and existing
+web behavior. Synthetic legacy migration preservation and both rollback guards,
+the standalone client tests and Rails autoload checks also passed.
+
+```sh
+bin/test_items_api wayfinder_api_test_morgana_20261125
+```
+
 Scope tradeoffs: no new immutable adjustment ledger, server-side natural-language
 classifier, transfer endpoint, unit conversion, alias management UI, location move
 API or new credential. Existing shopping now
