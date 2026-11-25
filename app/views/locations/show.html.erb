@@ -1,3 +1,31 @@
-<!-- app/views/COLLECTION/show.html.erb -->
-<p><%= link_to "Back", url_for(action: :index) %> | <%= link_to "Edit", url_for([:edit, instance_variable_get("@#{controller_name.singularize}")]) %></p>
-<h1><%= instance_variable_get("@#{controller_name.singularize}").full_name %></h1>
+<p><%= link_to "Back to index", locations_path, class: "btn" %></p>
+<h1><%= @location.full_name %></h1>
+<% if notice.present? %><p class="notice"><%= notice %></p><% end %>
+<% if alert.present? %><p class="alert"><%= alert %></p><% end %>
+
+<nav aria-label="Location path">
+  <% @location.path.each_with_index do |node, index| %>
+    <% if index.positive? %><span aria-hidden="true"> → </span><% end %>
+    <%= link_to node[:name], location_path(node[:id]) %>
+  <% end %>
+</nav>
+<p>
+  <%= link_to "Add sub-location", new_location_path(parent_id: @location.id), class: "btn" %>
+  <%= link_to "Edit", edit_location_path(@location), class: "btn" %>
+</p>
+
+<h2>Sub-locations</h2>
+<% if @children.any? %>
+  <ul>
+    <% @children.each do |child| %>
+      <li><%= link_to child.full_name, child %></li>
+    <% end %>
+  </ul>
+<% else %>
+  <p class="muted">No sub-locations yet.</p>
+<% end %>
+
+<div style="text-align: right">
+  <%= button_to "Destroy", @location, method: :delete,
+    form: { onsubmit: "return confirm('Delete this location? Locations with sub-locations or inventory cannot be deleted.');" } %>
+</div>

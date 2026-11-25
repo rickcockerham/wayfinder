@@ -1,7 +1,8 @@
 # Morgana inventory lookup and capture API
 
 Recovered from `feature/nested-inventory-api` and integrated with the current
-bearer API locally; deployment and live migrations remain pending. Existing
+bearer API in PR #3. Rick reported that API deployed on November 25; the web
+location controls described below are a follow-up awaiting deployment. Existing
 tasks (`Item`), physical inventory (`InventoryItem`), shops,
 locations and reservations retain their IDs. No example below is actual stock.
 
@@ -27,6 +28,24 @@ quantity records presence with an unknown count. Existing zeroes are not reclass
 The legacy web/model default stays zero for backward compatibility. Measured units
 can be declared but are never converted. Aliases are optional
 per-stock-row names for lookup; there is no separate master parts catalog.
+
+## Web locations
+
+Open **Locations** from the home page. **New location** has an optional
+**Parent location** selector showing each existing location's complete path.
+Leave it blank for a top-level location, or choose any existing node to create
+a child inside it. **Add sub-location** on a location's list row or detail page
+opens the same form with that parent selected. Repeat at any depth; labels and
+the number of levels are chosen by the owner, with no room/shelf/bin taxonomy.
+
+The index lists full paths, and location details link to each ancestor and direct
+child. Inventory location selectors already use full paths. Parent choices are
+owner-scoped; hidden locations are excluded unless explicitly selected by their
+own Add sub-location link. New siblings must have distinct names; the same name
+can be used under different parents. Editing retains the existing fixed parent
+and allows renaming or hiding. Deleting a location requires confirmation, and
+locations containing children or inventory are retained with an explanatory message.
+No sample locations are seeded. These web controls require no new migration.
 
 ## Authentication
 
@@ -224,14 +243,15 @@ Migration `20261027010000` makes qty_have
 nullable without updating existing values or changing the legacy zero default.
 Its rollback refuses unknown counts rather than converting them to zero. MySQL 8
 was used for validation; schema dump is generated from a disposable test database.
-These migrations have not been run on live Wayfinder by this change.
+The API migrations were included in PR #3; Rick reported deploying that PR.
+The web-control follow-up introduces no additional migration.
 
 After merging the PR, run `RAILS_ENV=production bundle exec rails db:migrate`
 from the existing production checkout before restarting Wayfinder. The existing
 `update.sh` rebuilds assets and restarts the service but does not run migrations.
 Both pending `20261027...` migrations must run even though the latest previously
 applied migration is dated November 17. Keep the existing bearer configuration.
-Rick will merge and deploy this change for live testing.
+The web-control follow-up uses the normal deployment and asset rebuild.
 
 From this checkout run `bin/test_items_api wayfinder_api_test_NAME` against a
 separately provisioned disposable database only. The runner uses the existing
@@ -240,11 +260,18 @@ MySQL account and never selects development/production. Initial test setup:
 The runner executes the complete ordinary Rails suite. Browser/Selenium system
 scaffolding is separate. No live migrations or live API calls are needed to test.
 
-Final bearer integration validation on November 25 used the disposable database
-`wayfinder_api_test_morgana_20261125`: 106 tests, 1,521 assertions, no failures,
+Final web-control validation on November 25 used the disposable database
+`wayfinder_api_test_morgana_20261125`: 115 tests, 1,649 assertions, no failures,
 errors or skips. This includes the current morning-priorities API and existing
-web behavior. Synthetic legacy migration preservation and both rollback guards,
+web behavior, plus six-level creation, repeated labels in separate branches,
+owner checks, parent selection, ancestry browsing and safe deletion. A local
+browser check created and browsed a synthetic hierarchy; its records were removed.
+The earlier synthetic legacy migration checks and both rollback guards passed;
 the standalone client tests and Rails autoload checks also passed.
+
+Use a separate disposable database for browser previews. Visiting the home page
+can persist default importance settings, which conflict with suite tests that
+create their own settings even after preview locations are removed.
 
 ```sh
 bin/test_items_api wayfinder_api_test_morgana_20261125

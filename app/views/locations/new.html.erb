@@ -1,4 +1,6 @@
-<!-- app/views/COLLECTION/new.html.erb -->
-<h1>New <%= controller_name.singularize.titleize %></h1>
+<p><%= link_to "Back to index", locations_path, class: "btn" %></p>
+<h1><%= @location.parent ? "New sub-location" : "New location" %></h1>
+<% if @location.parent %>
+  <p>Inside <strong><%= @location.parent.full_name %></strong></p>
+<% end %>
 <%= render "form" %>
-<p><%= link_to "Back", url_for(action: :index) %></p>
