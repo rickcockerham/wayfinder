@@ -35,7 +35,7 @@
           <% if missing.empty? %>
             ✅ ready
           <% else %>
-            <%= missing.map { |m| "#{m[:name]}(#{m[:short]})" }.join(", ") %>
+            <%= missing.map { |m| m[:quantity_unknown] ? "#{m[:name]} (quantity unknown)" : "#{m[:name]}(#{m[:short]})" }.join(", ") %>
           <% end %>
         </td>
         <td data-label="Actions">

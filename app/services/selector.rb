@@ -10,13 +10,15 @@ class Selector
     }
   }
 
+  #-----------------------------------------------------------------------------
   def initialize(hours:, mood:, category: nil, quick: nil, user: Current.user)
     @hours, @mood, @category, @quick = hours, mood&.to_s&.downcase, category&.to_s&.downcase, quick
     @user = user
   end
 
+  #-----------------------------------------------------------------------------
   def call
-    inv = InventoryItem.for_user(@user).includes(:location).index_by { |i| i.name.downcase }
+    inv = InventoryItem.for_user(@user).includes(:location).group_by { |i| i.name.downcase }
 
     scope = Item.for_user(@user).includes(:category, :mood, :blockers, :material_requirements).where(done: false).visible_on_list
     scope = scope.joins(:category).where(categories: { name: @category }) if @category.present?
@@ -36,6 +38,7 @@ class Selector
 
   private
 
+  #-----------------------------------------------------------------------------
   def time_scale_for_hours(hours)
     value = hours.to_f
     return 0 if value <= 0.5

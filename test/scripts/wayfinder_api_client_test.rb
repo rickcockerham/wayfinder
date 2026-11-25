@@ -11,7 +11,7 @@ class WayfinderApiClientTest < Minitest::Test
   CLIENT = File.expand_path("../../bin/wayfinder-api", __dir__)
   TOKEN = "a" * 64
 
-  #-------------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   def setup
     # Keep each credential and payload fixture private and separate from real config.
     @directory = Dir.mktmpdir("wayfinder-api-client-test-")
@@ -19,16 +19,19 @@ class WayfinderApiClientTest < Minitest::Test
     File.write(@config, JSON.generate("token" => TOKEN), perm: 0o600)
   end
 
-  #-------------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   def teardown
     # Remove only the temporary files created by this test.
     FileUtils.remove_entry(@directory)
   end
 
-  #-------------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   def test_get_and_delete_send_private_bearer_over_verified_fixed_tls
     # Exercise collection reads and deletion without making a real network request.
-    [["get", "/api/items/priorities?limit=20"], ["get", "/api/items/priorities"], ["get", "/api/items?limit=1&include_choices=1"], ["delete", "/api/items/123"]].each do |arguments|
+    [["get", "/api/items/priorities?limit=20"], ["get", "/api/items/priorities"],
+     ["get", "/api/items?limit=1&include_choices=1"], ["delete", "/api/items/123"],
+     ["get", "/api/locations?parent_id=12"], ["get", "/api/locations/12"],
+     ["get", "/api/inventory_items?q=timers&include_totals=1"], ["get", "/api/inventory_items/30"]].each do |arguments|
       result = run_client(arguments)
 
       assert_equal 0, result[:status]
@@ -48,7 +51,25 @@ class WayfinderApiClientTest < Minitest::Test
     end
   end
 
-  #-------------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
+  def test_nested_location_and_inventory_writes_reuse_bearer_transport
+    # Send native inventory payloads unchanged through the same private client.
+    examples = [
+      ["post", "/api/locations", { "location" => { "path" => ["Workshop", "Drawer"] } }],
+      ["put", "/api/inventory_items", { "inventory_item" => { "name" => "Timers", "location_id" => 12, "shop_id" => 4, "unit" => "each" } }]
+    ]
+    examples.each do |method, path, payload|
+      result = run_client([method, path, "-"], input: JSON.generate(payload))
+      assert_equal 0, result[:status]
+      assert_equal method.upcase, result[:requests].first.method
+      assert_equal path, result[:requests].first.path
+      assert_equal "Bearer #{TOKEN}", result[:requests].first["Authorization"]
+      assert_equal payload, JSON.parse(result[:requests].first.body)
+      assert_empty result[:stderr]
+    end
+  end
+
+  # ----------------------------------------------------------------------------
   def test_json_writes_accept_file_or_stdin_and_normalize_payload
     # Cover each supported write verb and both documented payload sources.
     payload = { "item" => { "title" => "Temporary API item" } }
@@ -68,7 +89,7 @@ class WayfinderApiClientTest < Minitest::Test
     end
   end
 
-  #-------------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   def test_invalid_destinations_methods_and_arguments_never_open_a_connection
     # Reject origin changes, path traversal and malformed command shapes before HTTP setup.
     arguments_to_reject = [
@@ -76,6 +97,12 @@ class WayfinderApiClientTest < Minitest::Test
       ["get", "//example.com/api/items"],
       ["get", "/api/items/../users"],
       ["get", "/api/items/%2e%2e/users"],
+      ["get", "/api/locations/../users"],
+      ["get", "/api/inventory_items/%2e%2e/users"],
+      ["get", "/api/locations/0"],
+      ["get", "/api/locations/priorities"],
+      ["get", "/api/inventory_items/priorities?limit=20"],
+      ["get", "/api/inventory_items/1#fragment"],
       ["get", "/api/items/1#fragment"],
       ["get", "/api/items?limit=1\r\nHost: example.com"],
       ["get", "/api/users"],
@@ -96,7 +123,7 @@ class WayfinderApiClientTest < Minitest::Test
     end
   end
 
-  #-------------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   def test_invalid_private_credentials_and_payloads_fail_without_disclosing_tokens
     # Reject absent, malformed and structurally invalid credential files.
     ["{broken", "123", "true", "null", JSON.generate(TOKEN), "{}", JSON.generate("token" => 123), JSON.generate("token" => "not-a-token")].each do |content|
@@ -138,7 +165,7 @@ class WayfinderApiClientTest < Minitest::Test
     assert_empty result[:connections]
   end
 
-  #-------------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   def test_http_errors_redirects_and_connection_failures_are_generic_and_nonzero
     # Error responses stay visible as API data, but redirects never trigger another request.
     [[Net::HTTPUnauthorized, "401", '{"error":"unauthorized"}'], [Net::HTTPFound, "302", "<html>Moved</html>"]].each do |klass, code, body|
@@ -159,7 +186,7 @@ class WayfinderApiClientTest < Minitest::Test
 
   private
 
-  #-------------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   def response_with_body(klass = Net::HTTPOK, code = "200", body = '{"ok":true}')
     # Model a response already read by Net::HTTP without opening a socket.
     response = klass.new("1.1", code, "Test response")
@@ -168,7 +195,7 @@ class WayfinderApiClientTest < Minitest::Test
     response
   end
 
-  #-------------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   def run_client(arguments, input: "", response: response_with_body, error: nil)
     # Save all process-wide inputs because the executable reads them directly.
     saved_arguments = ARGV.dup

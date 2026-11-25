@@ -1,6 +1,7 @@
 # coding: utf-8
 # app/controllers/shopping_controller.rb
 class ShoppingController < ApplicationController
+  #-----------------------------------------------------------------------------
   def index
     @shops     = Shop.for_user(current_user).visible.order(:name).to_a
     @locations = Location.for_user(current_user).visible.order(:name).to_a
@@ -26,6 +27,7 @@ class ShoppingController < ApplicationController
     @reqs_by_item = @requirements.group_by(&:item)
   end
 
+  #-----------------------------------------------------------------------------
   def purchase
     shop_id     = params[:shop_id].presence&.to_i
     location_id = params[:location_id].presence&.to_i
@@ -37,11 +39,13 @@ class ShoppingController < ApplicationController
     MaterialRequirement.for_user(current_user).where(id: ids).includes(:item, :shop).find_each do |mr|
       # 1) Find or create inventory row (by name + optional location)
       rel = InventoryItem.for_user(current_user).where("LOWER(name)=?", mr.name.downcase)
-      #rel = location_id ? rel.where(location_id:) : rel.where(location_id: nil)
+      rel = rel.where(location_id: location&.id)
+      # Never silently merge legacy duplicate unlocated stock rows.
+      raise ActiveRecord::RecordNotUnique if rel.limit(2).count > 1
       inv = rel.first
 
       if inv
-        inv.update!(qty_have: inv.qty_have.to_f + mr.qty_needed.to_f, shop: shop || mr.shop)
+        inv.update!(qty_have: inv.qty_have.nil? ? nil : inv.qty_have + mr.qty_needed, shop: shop || mr.shop)
       else
         inv = InventoryItem.create!(
           user: current_user,

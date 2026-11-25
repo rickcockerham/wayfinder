@@ -5,6 +5,7 @@ class HomeController < ApplicationController
 
   before_action :load_lookups
 
+  #-----------------------------------------------------------------------------
   def index
     # --- read params / defaults via persistence ---
     f = current_filters
@@ -22,7 +23,7 @@ class HomeController < ApplicationController
     @top_items = @items.first(@per)
 
     # --- per-item missing list for the table ---
-    inv = InventoryItem.for_user(current_user).index_by { |i| i.name.downcase }
+    inv = InventoryItem.for_user(current_user).group_by { |i| i.name.downcase }
     @missing_by_item = {}
     @top_items.each { |it| @missing_by_item[it.id] = it.missing_materials_by(inv) }
 
@@ -36,6 +37,7 @@ class HomeController < ApplicationController
 
   private
 
+  #-----------------------------------------------------------------------------
   def load_lookups
     @moods      = Mood.for_user(current_user).visible.order(:name).to_a
     @categories = Category.for_user(current_user).visible.order(:name).to_a
@@ -44,6 +46,7 @@ class HomeController < ApplicationController
 
 
   # Aggregate shortages across the CURRENT top items for one vendor.
+  #-----------------------------------------------------------------------------
   def build_shopping_list(items, inventory_hash, shop_id)
     need = Hash.new { |h, k| h[k] = { name: k[0], unit: k[1], needed: 0.0 } }
 
@@ -58,7 +61,11 @@ class HomeController < ApplicationController
     end
 
     need.values.filter_map do |row|
-      have = inventory_hash[row[:name].downcase]&.qty_have.to_f
+      inventory = Array.wrap(inventory_hash[row[:name].downcase]).select { |stock| stock.unit.to_s == row[:unit] }
+      if inventory.any? { |stock| stock.qty_have.nil? }
+        next { name: row[:name], short: nil, unit: row[:unit], quantity_unknown: true }
+      end
+      have = inventory.sum { |stock| stock.qty_have.to_f }
       short = row[:needed] - have
       short > 0 ? { name: row[:name], short: short, unit: row[:unit] } : nil
     end.sort_by { |h| h[:name] }

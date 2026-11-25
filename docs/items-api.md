@@ -1,7 +1,9 @@
 # Items API
 
-Routes cover items only; no catalog management, planner, shopping,
-inventory, blocker-management, settings or new login endpoint is added.
+This document covers task items. The [inventory API](inventory-api.md) adds
+locations and physical inventory using the same bearer/session authentication.
+No catalog management, planner, shopping, blocker-management, settings or new
+login endpoint is added.
 
 ## Morning priorities
 

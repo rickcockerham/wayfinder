@@ -4,6 +4,7 @@ class ItemsController < ApplicationController
   before_action :set_item, only: %i[show edit update destroy materials materials_post]
   before_action :load_form_collections, only: %i[new edit create update]
 
+  #-----------------------------------------------------------------------------
   def index
     f = current_filters
 
@@ -15,22 +16,26 @@ class ItemsController < ApplicationController
     items  = scope.includes(:material_requirements, :blockers, :blocks).to_a
     scores = MaxCascadeImportance.new(items).call
     @items = DependencyOrder.new(items, importance_map: scores).call
-    @inventory_by_name = InventoryItem.for_user(current_user).index_by { |i| i.name.downcase }
+    @inventory_by_name = InventoryItem.for_user(current_user).group_by { |i| i.name.downcase }
     @filters = f
   end
 
+  #-----------------------------------------------------------------------------
   def show
     @blocking_edges = ItemBlock.for_user(current_user).where(blocked_id: @item.id).includes(:blocker)
     @blocks_out = ItemBlock.for_user(current_user).where(blocker_id: @item.id).includes(:blocked)
   end
 
+  #-----------------------------------------------------------------------------
   def new
     @item = current_user.items.new
     @item.parent_id ||= owned_item_id(params[:parent_id])
   end
 
+  #-----------------------------------------------------------------------------
   def edit; end
 
+  #-----------------------------------------------------------------------------
   def create
     @item = current_user.items.new(item_params)
     if @item.save
@@ -40,6 +45,7 @@ class ItemsController < ApplicationController
     end
   end
 
+  #-----------------------------------------------------------------------------
   def update
   was_done = @item.done?
   if @item.update(item_params)
@@ -57,7 +63,7 @@ class ItemsController < ApplicationController
         if result.respond_to?(:deficits) && result.deficits.present?
           missing = result.deficits.map { |d|
             unit = d[:unit].presence ? " #{d[:unit]}" : ""
-            "#{d[:name]} (short #{d[:shortage]}#{unit})"
+            d[:quantity_unknown] ? "#{d[:name]} (quantity unknown; recount needed)" : "#{d[:name]} (short #{d[:shortage]}#{unit})"
           }.join(", ")
           messages << "Inventory short on: #{missing}."
         end
@@ -86,11 +92,13 @@ class ItemsController < ApplicationController
   end
   end
 
+  #-----------------------------------------------------------------------------
   def destroy
     @item.destroy
     redirect_to items_url, notice: "Item was successfully destroyed."
   end
 
+  #-----------------------------------------------------------------------------
   def materials
     @q     = params[:q].to_s.strip
     @page  = [params[:page].to_i, 1].max
@@ -109,6 +117,7 @@ class ItemsController < ApplicationController
     @shops   = visible_records(Shop.for_user(current_user), current_id: @shop_id)
   end
 
+  #-----------------------------------------------------------------------------
   def materials_post
     @shop_id = params[:shop_id].presence&.to_i
     shop     = @shop_id ? Shop.for_user(current_user).find_by(id: @shop_id) : nil
@@ -146,6 +155,7 @@ class ItemsController < ApplicationController
 
   private
 
+  #-----------------------------------------------------------------------------
   def upsert_requirement!(item, name, qty, unit, shop = nil)
     mr = item.material_requirements.where("LOWER(name)=?", name.downcase).first
     if mr
@@ -159,20 +169,24 @@ class ItemsController < ApplicationController
     end
   end
 
+  #-----------------------------------------------------------------------------
   def set_item
     @item = Item.for_user(current_user).find(params[:id])
     @material_requirements = @item.material_requirements.includes(:shop) if @item
   end
 
+  #-----------------------------------------------------------------------------
   def load_form_collections
     @categories = visible_records(Category.for_user(current_user), current_id: @item&.category_id)
     @moods = visible_records(Mood.for_user(current_user), current_id: @item&.mood_id)
   end
 
+  #-----------------------------------------------------------------------------
   def owned_item_id(id)
     Item.for_user(current_user).find_by(id: id)&.id
   end
 
+  #-----------------------------------------------------------------------------
   def item_params
     params.require(:item).permit(
       :title, :notes, :category_id, :mood_id,
