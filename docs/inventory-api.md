@@ -246,11 +246,11 @@ was used for validation; schema dump is generated from a disposable test databas
 The API migrations were included in PR #3; Rick reported deploying that PR.
 The web-control follow-up introduces no additional migration.
 
-After merging the PR, run `RAILS_ENV=production bundle exec rails db:migrate`
+For a first inventory API deployment, run `RAILS_ENV=production bundle exec rails db:migrate`
 from the existing production checkout before restarting Wayfinder. The existing
 `update.sh` rebuilds assets and restarts the service but does not run migrations.
-Both pending `20261027...` migrations must run even though the latest previously
-applied migration is dated November 17. Keep the existing bearer configuration.
+Rails applies any still-pending `20261027...` migrations even if the latest
+previously applied migration is dated November 17. Keep the existing bearer configuration.
 The web-control follow-up uses the normal deployment and asset rebuild.
 
 From this checkout run `bin/test_items_api wayfinder_api_test_NAME` against a
