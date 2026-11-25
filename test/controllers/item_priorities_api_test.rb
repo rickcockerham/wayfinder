@@ -116,32 +116,41 @@ class ItemPrioritiesApiTest < ActionDispatch::IntegrationTest
 
   # --------------------------------------------------------------------------
   test "CLI entry point reaches real priorities route with synthetic credential" do
-    task = @make.call("CLI priority")
+    tasks = (1..25).map { |n| @make.call("CLI priority #{n}", deadline: Date.current - n) }
     Dir.mktmpdir("priorities-client-") do |directory|
       path = File.join(directory, "api.json")
       File.write(path, JSON.generate(token: @token), perm: 0o600)
       ENV["WAYFINDER_API_CONFIG"] = path
       saved_argv = ARGV.dup
-      ARGV.replace(["get", "/api/items/priorities"])
       http = Net::HTTP.new("example.invalid", 443)
       requests = 0
       http.stub(:request, ->(request) {
         requests += 1
         get request.path, headers: { "Authorization" => request["Authorization"] }
-        result = Net::HTTPOK.new("1.1", response.status.to_s, "Fixture")
+        result_class = response.successful? ? Net::HTTPOK : Net::HTTPBadRequest
+        result = result_class.new("1.1", response.status.to_s, "Fixture")
         result.body = response.body
         result.instance_variable_set(:@read, true)
         result
       }) do
         Net::HTTP.stub(:new, http) do
-          output, errors = capture_io { load Rails.root.join("bin/wayfinder-api") }
-          assert_empty errors
-          assert_equal [task.id], JSON.parse(output)["items"].map { |row| row["id"] }
-          assert_not_includes output, @token
+          [["/api/items/priorities", 5], ["/api/items/priorities?limit=20", 20]].each do |endpoint, count|
+            ARGV.replace(["get", endpoint])
+            output, errors = capture_io { load Rails.root.join("bin/wayfinder-api") }
+            assert_empty errors
+            assert_equal tasks.reverse.first(count).map(&:id), JSON.parse(output)["items"].map { |row| row["id"] }
+            assert_not_includes output, @token
+          end
+          ARGV.replace(["get", "/api/items/priorities?limit=0"])
+          output, errors = capture_io do
+            assert_raises(SystemExit) { load Rails.root.join("bin/wayfinder-api") }
+          end
+          assert_equal "invalid_limit", JSON.parse(output)["error"]
+          assert_includes errors, "HTTP 400"
         end
       end
-      assert_equal 1, requests
-      assert_response :success
+      assert_equal 3, requests
+      assert_response :bad_request
     ensure
       ARGV.replace(saved_argv) if saved_argv
     end
@@ -163,5 +172,24 @@ class ItemPrioritiesApiTest < ActionDispatch::IntegrationTest
     assert_equal second.id, session[:filters_v2]["value"].with_indifferent_access[:category_id]
     get "/api/items/priorities", params: { category_id: [second.id] }, headers: @headers
     assert_response :bad_request
+  end
+  # --------------------------------------------------------------------------
+  test "ranked limit defaults to five accepts twenty and validates bounds without bypassing eligibility" do
+    tasks = (1..25).map { |n| @make.call("Ranked #{n}", deadline: Date.current - n) }
+    @make.call("Completed", done: true, personal_impact: 99)
+    blocker = @make.call("Hidden unfinished blocker", deadline: Date.current + 10, hide_days: 1, personal_impact: 99)
+    blocked = @make.call("Blocked", personal_impact: 99)
+    ItemBlock.create!(user: @user, blocker: blocker, blocked: blocked)
+    [[{}, 5], [{ limit: 20 }, 20], [{ limit: 1 }, 1], [{ limit: 100 }, 25], [{ per: 100 }, 5]].each do |query, count|
+      get "/api/items/priorities", params: query, headers: @headers
+      assert_response :success
+      assert_equal tasks.reverse.first(count).map(&:id), response.parsed_body["items"].map { |row| row["id"] }
+      assert_equal query.fetch(:limit, 5), response.parsed_body.dig("filters", "per")
+    end
+    [0, -1, 101, "", "abc", "1.5", [20], { count: 20 }].each do |limit|
+      get "/api/items/priorities", params: { limit: limit }, headers: @headers
+      assert_response :bad_request, limit.inspect
+      assert_equal "invalid_limit", response.parsed_body["error"]
+    end
   end
 end

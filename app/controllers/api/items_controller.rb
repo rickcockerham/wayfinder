@@ -22,6 +22,12 @@ module Api
       if params[:q].present?
         return render json: { error: "empty_search_required" }, status: :bad_request
       end
+      # Bound response size independently of browser page-size preferences.
+      limit = params.fetch(:limit, "5")
+      unless limit.is_a?(String) && limit.match?(/\A\d+\z/) && (1..100).cover?(limit.to_i)
+        return render json: { error: "invalid_limit" }, status: :bad_request
+      end
+      limit = limit.to_i
       # Reject malformed filter shapes before invoking the existing home normalizer.
       invalid_shape = %i[category_id time_i sort per].any? { |key| params.key?(key) && !params[key].is_a?(String) }
       invalid_shape ||= Array(params[:mood_ids]).any? { |value| !value.is_a?(String) }
@@ -29,8 +35,8 @@ module Api
         return render json: { error: "invalid_filters" }, status: :bad_request
       end
       # Fresh home defaults plus explicit overrides; do not read or persist sessions.
-      filters = sanity(apply_params(default_filters)).merge(q: "", per: 5)
-      items = HomeItemSelection.new(current_user, filters).call.first(5)
+      filters = sanity(apply_params(default_filters)).merge(q: "", per: limit)
+      items = HomeItemSelection.new(current_user, filters).call.first(limit)
       render json: {
         observed_at: Time.current.utc.iso8601,
         filter_source: "fresh_home_defaults_with_explicit_overrides",
