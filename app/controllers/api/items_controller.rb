@@ -1,14 +1,10 @@
 module Api
-  class ItemsController < ApplicationController
+  class ItemsController < BaseController
     FIELDS = %w[title notes category_id mood_id parent_id personal_impact emotional_impact family_impact time_scale deadline hide_days done recurrence_kind recurrence_unit recurrence_interval recurrence_day_of_month recurrence_month_of_year].freeze
     INTEGERS = %w[category_id mood_id parent_id personal_impact emotional_impact family_impact time_scale hide_days recurrence_interval recurrence_day_of_month recurrence_month_of_year].freeze
     NULLABLE = %w[parent_id recurrence_day_of_month recurrence_month_of_year].freeze
 
     before_action :find_item, only: %i[show update destroy]
-    after_action :private_response
-    rescue_from ActiveRecord::RecordNotFound, with: :not_found
-    rescue_from ActionController::InvalidAuthenticityToken, with: :invalid_csrf
-    rescue_from ActionDispatch::Http::Parameters::ParseError, with: :invalid_json
 
     # --------------------------------------------------------------------------
     def index
@@ -66,42 +62,8 @@ module Api
     private
 
     # --------------------------------------------------------------------------
-    def require_authentication
-      # Use existing signed cookies, but never provision a legacy default user.
-      data = SimpleAuth.cookie_data(cookies)
-      @api_user = User.find_by(id: data[:user_id], access_key: data[:access_key]) if data
-      render json: { error: "unauthorized" }, status: :unauthorized unless @api_user
-    end
-
-    # --------------------------------------------------------------------------
-    def set_current_user
-      Current.user = @api_user
-    end
-
-    # --------------------------------------------------------------------------
-    def private_response
-      response.headers["Cache-Control"] = "no-store"
-      response.headers["X-CSRF-Token"] = form_authenticity_token if @api_user
-    end
-
-    # --------------------------------------------------------------------------
     def find_item
       @item = current_user.items.find(params[:id])
-    end
-
-    # --------------------------------------------------------------------------
-    def not_found
-      render json: { error: "not_found" }, status: :not_found
-    end
-
-    # --------------------------------------------------------------------------
-    def invalid_csrf
-      render json: { error: "invalid_csrf_token" }, status: :unprocessable_entity
-    end
-
-    # --------------------------------------------------------------------------
-    def invalid_json
-      render json: { error: "invalid_json" }, status: :bad_request
     end
 
     # --------------------------------------------------------------------------

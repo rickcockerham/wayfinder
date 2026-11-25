@@ -10,7 +10,28 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_27_010000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_17_000000) do
+  create_table "api_request_logs", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.datetime "requested_at", null: false
+    t.string "request_id", null: false
+    t.string "remote_ip"
+    t.string "peer_ip"
+    t.string "http_method", limit: 16, null: false
+    t.text "path", null: false
+    t.integer "status", null: false
+    t.decimal "duration_ms", precision: 12, scale: 3, null: false
+    t.text "user_agent"
+    t.string "authentication_method", limit: 16, null: false
+    t.string "token_fingerprint", limit: 64
+    t.string "exception_class"
+    t.string "ip_resolution_exception_class"
+    t.bigint "user_id"
+    t.index ["request_id"], name: "index_api_request_logs_on_request_id"
+    t.index ["requested_at"], name: "index_api_request_logs_on_requested_at"
+    t.index ["token_fingerprint", "requested_at"], name: "index_api_request_logs_on_token_fingerprint_and_requested_at"
+    t.index ["user_id", "requested_at"], name: "index_api_request_logs_on_user_id_and_requested_at"
+  end
+
   create_table "categories", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.datetime "created_at", null: false

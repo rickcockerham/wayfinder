@@ -1,21 +1,42 @@
 # Items API
 
-Local implementation for Rick to review and deploy. No migration or credential
-provisioning is required. Routes cover items only; no catalog management, planner, shopping,
-blocker-management, settings or authentication API is added here. Physical inventory
-and nested location routes are documented separately in [inventory-api.md](inventory-api.md).
+This document covers task items. The [inventory API](inventory-api.md) adds
+locations and physical inventory using the same bearer/session authentication.
+No catalog management, planner, shopping, blocker-management, settings or new
+login endpoint is added.
 
 ## Authentication
 
-Use an existing Wayfinder login session over HTTPS. The API accepts the existing
-signed `auth_v1` cookie only for a currently existing user whose access key still
-matches. It fails closed even when web authentication is disabled. It does not
-accept keys in URLs or Authorization headers and does not create users or keys.
-There is no CORS or CSRF exemption. Use the existing web login flow; no new
-persistent access has been enabled.
+The assistant uses one fixed, random 256-bit bearer token over HTTPS. Send
+`Authorization: Bearer TOKEN`. The server stores only its SHA-256 digest in
+`WAYFINDER_API_TOKEN_SHA256` and the existing owner's ID in
+`WAYFINDER_API_USER_ID`; the token never doubles as a website login key.
+Missing/invalid configuration, a wrong token or a deleted owner returns 401.
+An explicitly supplied invalid Authorization header never falls back to cookies.
 
-An authenticated GET returns `X-CSRF-Token`. Send this token with POST/PATCH/PUT/
-DELETE and retain the session cookies. All responses use `Cache-Control: no-store`.
+The private local client file is `~/.config/wayfinder/api.json`, owned by the
+local user with mode 0600 inside a mode-0700 directory. It contains the `token`
+plus nonsecret origin, user ID, creation date and fingerprint metadata. The file
+stays outside Git. Requests use the token in-process, keeping it out of command
+arguments and shell history. `WAYFINDER_API_CONFIG` can select another private
+client file. The client always contacts `https://mywayfinder.app` and never follows
+redirects or sends credentials to another origin.
+
+```sh
+bin/wayfinder-api get '/api/items?include_choices=1'
+bin/wayfinder-api get /api/items/123
+# Writes accept a JSON file, or - to read JSON from stdin.
+bin/wayfinder-api post /api/items payload.json
+```
+
+Only a fully verified bearer token bypasses browser CSRF protection. Bearer
+requests do not establish a website login or return a CSRF/session token.
+The normal signed `auth_v1` cookie still works for website/browser clients, but
+its current user ID and access key must match an existing user. Cookie writes
+retain CSRF protection. Tokens in query/body parameters are not accepted.
+
+An authenticated cookie GET returns `X-CSRF-Token`. Send this token with POST/PATCH/PUT/
+DELETE and retain the session cookies. Controller responses use `Cache-Control: no-store`.
 A browser console example on the already authenticated Wayfinder origin:
 
 ```javascript
@@ -32,9 +53,42 @@ const result = await fetch('/api/items', {
 console.log(await result.json());
 ```
 
-The IDs above are illustrative. Do not execute examples against user data just
-to test this implementation. An assistant client needs an existing authenticated
-session and CSRF support. No bearer-token access mechanism was introduced.
+The IDs above are illustrative. Use the owner's existing category/mood choices.
+Create a clearly labeled disposable item when verifying live mutations, and
+delete only that item after checking its returned ID and unique title.
+
+## Credential maintenance
+
+No scheduled rotation or expiry is required. The assistant can retain the fixed
+token locally and use SSH to maintain the service without browser login.
+Production owner is user 1 (Default). Server settings live in
+`/etc/wayfinder/api.env`, loaded by the `wayfinder.service` drop-in
+`/etc/systemd/system/wayfinder.service.d/api.conf`; the application directory is
+`/var/www/wayfinder`. Existing service settings and credentials remain separate.
+Use existing SSH access to `root@mywayfinder.app` for maintenance.
+
+To rotate, generate `SecureRandom.hex(32)`, replace the server's digest and the
+private client's token/fingerprint, and restart `wayfinder.service`. Replace the
+client file atomically with mode 0600; never print the new token. To revoke
+bearer access, remove the digest from the server environment and restart the
+service. Keep the existing local token until deliberately rotating it. Changing
+a website login key does not rotate this independent API credential.
+
+## Request diagnostics
+
+The `api_request_logs` server database table records every `/api` and `/api/*`
+request, including authentication/CSRF failures and routing errors. It stores
+UTC request date, proxy-aware client IP, peer IP, request ID, method, path,
+status, duration, user agent, resolved user ID, authentication method, token
+SHA-256 fingerprint and exception class. An IP-spoof resolution failure retains
+the peer address and its own exception class. Raw tokens, Authorization values,
+cookies, query strings and request bodies are excluded.
+
+Token fingerprints identify the exact credential used, including failed bearer
+attempts. User IDs are recorded only after credential verification; routing
+errors may have a token fingerprint without a resolved user. No automatic log
+deletion is enabled. If inserting a diagnostic row fails, Rails logs a sanitized
+exception class and preserves the original API response.
 
 ## Contract
 
@@ -123,7 +177,8 @@ The dedicated database used for this task is
 bin/test_items_api wayfinder_api_test_20261025_0925
 ```
 
-API tests cover unauthorized and cross-user access, revocation, CSRF, defaults,
+API tests cover unauthorized and cross-user access, bearer rotation/revocation,
+verified bearer CSRF exemption, retained cookie CSRF, request diagnostics, defaults,
 explicit values, pagination, validation, lifecycle and fixture-only hard deletion.
 Choice tests cover unused visible options, hidden/cross-user exclusion, empty item
 lists, anonymous denial and enriched capture with zero priorities/blank deadline.
@@ -131,7 +186,8 @@ The ordinary Rails suite includes existing web and model regressions. Selenium
 system scaffolds have not been run: they assume unauthenticated access and do not
 supply required item fields. No browser dependency was installed.
 
-Rick: review and deploy this branch through the usual process, then use an
-existing authenticated session. The assistant can enrich title-only requests from
-the opt-in choices metadata as Rick authorized. Any future new access
-mechanism needs separate approval before provisioning credentials or enabling it.
+The ordinary suite includes the standalone client tests. Run them directly with
+`bundle exec ruby test/scripts/wayfinder_api_client_test.rb` when validating only
+the client. Apply the `CreateApiRequestLogs` migration before restarting the
+updated production service. The assistant can enrich title-only requests from
+the opt-in choices metadata as Rick authorized.
