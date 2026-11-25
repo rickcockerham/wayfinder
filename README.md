@@ -86,8 +86,8 @@ It also tracks materials vs. inventory, builds a shopping list by vendor, and re
 
 Morgana can use the [inventory API](docs/inventory-api.md) with the existing
 HTTP bearer token to create/reuse nested locations, search names and aliases,
-and record presence or explicit counts. Nested inventory support is prepared
-locally; live migration and deployment remain pending.
+and record presence or explicit counts. The Locations web pages provide a parent
+selector and Add sub-location links for building and browsing arbitrary-depth paths.
 
 > When an item is marked **done**, inventories are decremented (via `ItemCompletion`), deficits are reported, and the **next recurring** item is created (if applicable) via `RecurrenceGenerator`.
 

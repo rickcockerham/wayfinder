@@ -64,6 +64,14 @@ fieldset {
 }
 
 /* ---------- FORMS ---------- */
+/* Keep nested-location paths and their fields inside narrow browser windows. */
+.location-form { max-width: 48rem; }
+.location-form input[type="text"], .location-form select {
+  box-sizing: border-box;
+  max-width: 100%;
+  width: 100%;
+}
+
 input, select, textarea, button {
   font: inherit; color: var(--text);
 }

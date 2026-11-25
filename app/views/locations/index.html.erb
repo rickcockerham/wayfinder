@@ -1,16 +1,24 @@
-<h1><%= controller_name.titleize %></h1>
-<p><%= link_to 'Back', root_path %></p>
-<p><%= link_to "New #{controller_name.singularize.titleize}", url_for(action: :new) %></p>
-<table border="1" cellpadding="6">
-  <tr><th>Name</th><th>Hidden</th><th></th></tr>
-  <% instance_variable_get("@#{controller_name}").each do |rec| %>
-    <tr>
-      <td><%= link_to rec.full_name, rec %></td>
-      <td><%= rec.hidden? ? "Yes" : "No" %></td>
-      <td>
-        <%= link_to "Edit", url_for([:edit, rec]) %> |
-        <%= link_to "Destroy", rec, method: :delete, data: { confirm: "Delete?" } %>
-      </td>
-    </tr>
-  <% end %>
-</table>
+<p><%= link_to "Back to home", root_path, class: "btn" %></p>
+<h1>Locations</h1>
+<% if notice.present? %><p class="notice"><%= notice %></p><% end %>
+<% if alert.present? %><p class="alert"><%= alert %></p><% end %>
+<p><%= link_to "New location", new_location_path, class: "btn" %></p>
+<p class="muted">Add a sub-location at any level. Full paths distinguish names used in different places.</p>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Location path</th><th>Hidden</th><th>Actions</th></tr></thead>
+    <tbody>
+      <% @locations.each do |location| %>
+        <tr>
+          <td><%= link_to location.full_name, location %></td>
+          <td><%= location.hidden? ? "Yes" : "No" %></td>
+          <td>
+            <%= link_to "Add sub-location", new_location_path(parent_id: location.id), class: "btn" %>
+            <%= link_to "Edit", edit_location_path(location), class: "btn" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

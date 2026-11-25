@@ -1,10 +1,21 @@
-<!-- app/views/COLLECTION/_form.html.erb -->
-<% rec = instance_variable_get("@#{controller_name.singularize}") %>
-<%= form_with(model: rec) do |f| %>
-  <% if rec.errors.any? %>
-    <div style="color:red"><%= rec.errors.full_messages.to_sentence %></div>
+<%= form_with(model: @location, class: "location-form") do |f| %>
+  <% if @location.errors.any? %>
+    <div class="alert"><%= @location.errors.full_messages.to_sentence %></div>
   <% end %>
-  <p>Name<br><%= f.text_field :name, required: true %></p>
-  <p>Hide <%= f.check_box :hidden %></p>
+
+  <% if @location.persisted? %>
+    <p><strong>Parent location:</strong> <%= @location.parent&.full_name || "Top-level location" %></p>
+    <p class="muted">The parent is fixed after creation. Renaming keeps the location and its contents together.</p>
+  <% else %>
+    <p>
+      <%= f.label :parent_id, "Parent location" %><br>
+      <%= f.collection_select :parent_id, @parent_locations, :id, :full_name,
+        include_blank: "None (top-level location)" %>
+    </p>
+    <p class="muted">Choose any existing location to add a sub-location inside it. You can keep adding levels as needed.</p>
+  <% end %>
+
+  <p><%= f.label :name %><br><%= f.text_field :name, required: true, maxlength: 255 %></p>
+  <p><%= f.label :hidden, "Hide" %> <%= f.check_box :hidden %></p>
   <p><%= f.submit %></p>
-  <% end %>
+<% end %>
