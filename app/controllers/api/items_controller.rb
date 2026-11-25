@@ -2,6 +2,7 @@ require "digest"
 
 module Api
   class ItemsController < ApplicationController
+    include FilterPersistence
     FIELDS = %w[title notes category_id mood_id parent_id personal_impact emotional_impact family_impact time_scale deadline hide_days done recurrence_kind recurrence_unit recurrence_interval recurrence_day_of_month recurrence_month_of_year].freeze
     INTEGERS = %w[category_id mood_id parent_id personal_impact emotional_impact family_impact time_scale hide_days recurrence_interval recurrence_day_of_month recurrence_month_of_year].freeze
     NULLABLE = %w[parent_id recurrence_day_of_month recurrence_month_of_year].freeze
@@ -14,6 +15,33 @@ module Api
     rescue_from ActiveRecord::RecordNotFound, with: :not_found
     rescue_from ActionController::InvalidAuthenticityToken, with: :invalid_csrf
     rescue_from ActionDispatch::Http::Parameters::ParseError, with: :invalid_json
+
+    # --------------------------------------------------------------------------
+    def priorities
+      # A morning report always uses empty-search eligibility, never search bypasses.
+      if params[:q].present?
+        return render json: { error: "empty_search_required" }, status: :bad_request
+      end
+      # Reject malformed filter shapes before invoking the existing home normalizer.
+      invalid_shape = %i[category_id time_i sort per].any? { |key| params.key?(key) && !params[key].is_a?(String) }
+      invalid_shape ||= Array(params[:mood_ids]).any? { |value| !value.is_a?(String) }
+      if invalid_shape
+        return render json: { error: "invalid_filters" }, status: :bad_request
+      end
+      # Fresh home defaults plus explicit overrides; do not read or persist sessions.
+      filters = sanity(apply_params(default_filters)).merge(q: "", per: 5)
+      items = HomeItemSelection.new(current_user, filters).call.first(5)
+      render json: {
+        observed_at: Time.current.utc.iso8601,
+        filter_source: "fresh_home_defaults_with_explicit_overrides",
+        filters: filters,
+        items: items.map { |item| {
+          id: item.id, title: item.title, url: item_url(item),
+          deadline: item.deadline, hide_days: item.hide_days,
+          importance_score: item.importance_score
+        } }
+      }
+    end
 
     # --------------------------------------------------------------------------
     def index
@@ -69,6 +97,14 @@ module Api
     end
 
     private
+
+    # --------------------------------------------------------------------------
+    def importance_setting
+      # GET must not create settings when an owner has never saved any.
+      @importance_setting ||= current_user.importance_setting ||
+        ImportanceSetting.new(ImportanceSetting.default_attributes)
+    end
+
 
     # --------------------------------------------------------------------------
     def authenticate_api_credentials
