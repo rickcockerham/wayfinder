@@ -28,7 +28,7 @@ class WayfinderApiClientTest < Minitest::Test
   #-------------------------------------------------------------------------------
   def test_get_and_delete_send_private_bearer_over_verified_fixed_tls
     # Exercise collection reads and deletion without making a real network request.
-    [["get", "/api/items?limit=1&include_choices=1"], ["delete", "/api/items/123"]].each do |arguments|
+    [["get", "/api/items/priorities?limit=20"], ["get", "/api/items/priorities"], ["get", "/api/items?limit=1&include_choices=1"], ["delete", "/api/items/123"]].each do |arguments|
       result = run_client(arguments)
 
       assert_equal 0, result[:status]

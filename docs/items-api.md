@@ -3,6 +3,58 @@
 Routes cover items only; no catalog management, planner, shopping,
 inventory, blocker-management, settings or new login endpoint is added.
 
+## Morning priorities
+
+```sh
+bin/wayfinder-api get /api/items/priorities
+bin/wayfinder-api get '/api/items/priorities?limit=20'
+bin/wayfinder-api get '/api/items/priorities?category_id=12&mood_ids[]=3&time_i=2'
+```
+
+`GET /api/items/priorities` uses the existing bearer key and defaults to at most five
+items in the same order as the home view for the **reported effective filters**.
+The browser and API share `HomeItemSelection`; no ranking formula is duplicated.
+Response: `{observed_at,filter_source,filters,items:[{id,title,url,deadline,
+hide_days,importance_score}]}`. `observed_at` is UTC. An empty eligible set returns
+an empty array. Set `limit` to a decimal integer from **1 to 100**; omitted means
+**5**. `limit=20` returns the first twenty eligible items, or fewer if fewer qualify.
+Blank, non-integer, structured, zero, negative or over-100 limits return HTTP 400
+`{error:"invalid_limit"}`. Returned `filters.per` reports the effective limit.
+This route creates no items, settings or browser-filter state;
+existing API request diagnostics still record the request.
+
+Non-browser defaults are a **fresh home view**, not another browser's saved state:
+
+- Empty search: exclude completed items, items outside Hide Until, and items with
+  unfinished blockers. Hide Until keeps the existing strict boundary:
+  `days_until_deadline < hide_days`; blank deadline or nonpositive hide_days is
+  always visible. A completed blocker no longer excludes its dependent item.
+- All visible moods, all time scales (7), importance descending and five results.
+  The shared home normalizer applies its existing behavior if no moods are visible.
+- Category from the current planner entry for the owner's local date/day part,
+  using saved planner timezone/start times. The most recently updated matching
+  planner entry wins. If none applies, no category restriction is used.
+- Actual owner importance settings determine scores. Missing settings use the
+  existing in-memory defaults without creating a settings record. Ranking and
+  Hide Until use the application's existing `Date.current` semantics.
+
+Explicit `mood_ids[]`, `category_id`, `time_i` and `sort` query parameters use the
+same normalization as the home view. `category_id=` clears the planner category;
+blank mood selection normalizes to all visible moods. `sort=time` requests the
+home's time-scale/deadline ordering; default `sort=importance` ranks by score.
+Invalid sort falls back to importance, out-of-range time to 7, unavailable mood
+IDs are removed and unavailable category IDs clear that restriction, as at home.
+Malformed filter structures return 400. Nonempty `q` returns 400 so search cannot
+bypass morning eligibility. `per` does not control API result count; use `limit`. The morning brief default remains five.
+
+Even cookie-authenticated calls use fresh defaults plus explicit overrides;
+the API neither reads nor overwrites the browser's one-hour saved filters. Send
+known active filters explicitly when matching a particular browser view. Returned
+`filters` makes the effective selection inspectable. Ties preserve the existing
+home behavior: equal importance keeps database retrieval order; time sorting uses
+time scale then deadline. No new ID tie-break or cross-request tie guarantee is
+introduced. Generic `/api/items` remains ID-ordered and includes completed items.
+
 ## Authentication
 
 The assistant uses one fixed, random 256-bit bearer token over HTTPS. Send
@@ -94,6 +146,7 @@ exception class and preserves the original API response.
 | --- | --- | --- |
 | GET | `/api/items?limit=50&after_id=0` | `{items:[...],next_after_id:null}` |
 | GET | `/api/items?include_choices=1` | List plus `{choices:{categories:[{id,name}],moods:[{id,name}]}}` |
+| GET | `/api/items/priorities` | Fresh-home selection, limit 1..100 (default 5), effective filters and UTC observation time |
 | GET | `/api/items/:id` | `{item:{...}}` |
 | POST | `/api/items` | 201 `{item:{...}}` |
 | PATCH / PUT | `/api/items/:id` | 200 `{item:{...}}` |
@@ -183,6 +236,8 @@ lists, anonymous denial and enriched capture with zero priorities/blank deadline
 The ordinary Rails suite includes existing web and model regressions. Selenium
 system scaffolds have not been run: they assume unauthenticated access and do not
 supply required item fields. No browser dependency was installed.
+
+The ordinary suite also covers priorities eligibility, Hide Until boundaries, owner-specific ranking, planner defaults, explicit filters, ties, cookie-state separation and the real CLI-to-controller entry point with synthetic credentials.
 
 The ordinary suite includes the standalone client tests. Run them directly with
 `bundle exec ruby test/scripts/wayfinder_api_client_test.rb` when validating only

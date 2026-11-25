@@ -1,6 +1,8 @@
 Rails.application.routes.draw do
   namespace :api, defaults: { format: :json } do
-    resources :items, only: %i[index show create update destroy]
+    resources :items, only: %i[index show create update destroy] do
+      get :priorities, on: :collection
+    end
   end
 
 
