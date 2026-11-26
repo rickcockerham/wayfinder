@@ -184,6 +184,32 @@ class WayfinderApiClientTest < Minitest::Test
     assert_empty result[:stdout]
   end
 
+  #-----------------------------------------------------------------------------
+  def test_native_blocker_commands_preserve_direction_and_fixed_bearer_transport
+    examples = [
+      [["block", "123", "456"], "POST", "/api/item_blocks", { "item_block" => { "blocker_id" => 123, "blocked_id" => 456 } }],
+      [["blockers", "456"], "GET", "/api/item_blocks?blocked_id=456", nil],
+      [["blocks", "123"], "GET", "/api/item_blocks?blocker_id=123", nil],
+      [["unblock", "789"], "DELETE", "/api/item_blocks/789", nil],
+      [["get", "/api/item_blocks?limit=1&after_id=10"], "GET", "/api/item_blocks?limit=1&after_id=10", nil]
+    ]
+    examples.each do |arguments, method, path, payload|
+      result = run_client(arguments)
+      assert_equal 0, result[:status]
+      request = result[:requests].fetch(0)
+      assert_equal method, request.method
+      assert_equal path, request.path
+      payload.nil? ? assert_nil(request.body) : assert_equal(payload, JSON.parse(request.body))
+      assert_equal "Bearer #{TOKEN}", request["Authorization"]
+      assert_equal [["mywayfinder.app",443]], result[:connections]
+    end
+    [["block", "123"], ["block", "123", "0"], ["blocks", "../123"], ["unblock", "0"], ["blockers", "123", "456"]].each do |arguments|
+      result = run_client(arguments)
+      refute_equal 0, result[:status]
+      assert_empty result[:connections]
+    end
+  end
+
   private
 
   # ----------------------------------------------------------------------------

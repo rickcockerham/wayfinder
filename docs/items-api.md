@@ -2,8 +2,8 @@
 
 This document covers task items. The [inventory API](inventory-api.md) adds
 locations and physical inventory using the same bearer/session authentication.
-No catalog management, planner, shopping, blocker-management, settings or new
-login endpoint is added.
+Native directed prerequisites are documented in [blockers-api.md](blockers-api.md).
+No catalog management, planner, shopping, settings or new login endpoint is added here.
 
 ## Morning priorities
 
