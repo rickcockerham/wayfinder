@@ -18,17 +18,23 @@ class ItemBlocksController < ApplicationController
 
   def edit; end
 
+  #-----------------------------------------------------------------------------
   def create
     @item_block = current_user.item_blocks.new(item_block_params)
-    if @item_block.save
+    saved = current_user.with_lock { @item_block.save }
+    if saved
       redirect_to item_blocks_path, notice: "Blocker edge created."
     else
       render :new, status: :unprocessable_entity
     end
   end
 
+  #-----------------------------------------------------------------------------
   def update
-    if @item_block.update(item_block_params)
+    saved = current_user.with_lock do
+      @item_block.with_lock { @item_block.update(item_block_params) }
+    end
+    if saved
       redirect_to item_blocks_path, notice: "Blocker edge updated."
     else
       render :edit, status: :unprocessable_entity

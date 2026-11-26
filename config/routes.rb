@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   namespace :api, defaults: { format: :json } do
+    resources :item_blocks, only: %i[index show create destroy]
     resources :locations, only: %i[index show create]
     resources :inventory_items, only: %i[index show]
     put "inventory_items", to: "inventory_items#set_count"

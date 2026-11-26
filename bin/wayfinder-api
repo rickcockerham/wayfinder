@@ -5,13 +5,30 @@ require "openssl"
 
 # Keep the reusable credential outside the checkout and out of process arguments.
 config_path = File.expand_path(ENV.fetch("WAYFINDER_API_CONFIG", "~/.config/wayfinder/api.json"))
-usage = "Usage: bin/wayfinder-api [get|post|patch|put|delete] [/api/items[/ID|/priorities]|/api/{locations,inventory_items}[/ID]][?query] [payload.json|-]"
+usage = "Blockers: bin/wayfinder-api block BLOCKER_ID BLOCKED_ID | blockers ITEM_ID | blocks ITEM_ID | unblock EDGE_ID\nUsage: bin/wayfinder-api [get|post|patch|put|delete] [/api/items[/ID|/priorities]|/api/{locations,inventory_items}[/ID]][?query] [payload.json|-]"
 method = ARGV.fetch(0, "get").downcase
 path = ARGV.fetch(1, "/api/items")
 request_classes = { "get" => Net::HTTP::Get, "post" => Net::HTTP::Post, "patch" => Net::HTTP::Patch, "put" => Net::HTTP::Put, "delete" => Net::HTTP::Delete }
+# Direction is literal: block A B means A is the prerequisite that blocks B.
+block_payload = nil
+if %w[block blockers blocks unblock].include?(method)
+  expected_arguments = method == "block" ? 3 : 2
+  abort usage unless ARGV.length == expected_arguments && ARGV.drop(1).all? { |id| id.match?(/\A[1-9]\d*\z/) }
+  case method
+  when "block"
+    block_payload = JSON.generate(item_block: { blocker_id: path.to_i, blocked_id: ARGV[2].to_i })
+    method, path = "post", "/api/item_blocks"
+  when "blockers"
+    method, path = "get", "/api/item_blocks?blocked_id=#{path}"
+  when "blocks"
+    method, path = "get", "/api/item_blocks?blocker_id=#{path}"
+  when "unblock"
+    method, path = "delete", "/api/item_blocks/#{path}"
+  end
+end
 abort usage unless request_classes.key?(method) && ARGV.length <= 3
 # Allow priorities only for tasks while retaining the fixed-origin inventory routes.
-abort "Only relative items, locations and inventory_items API endpoints are supported" unless path.match?(%r{\A/api/(?:items(?:/priorities|/[1-9]\d*)?|(?:locations|inventory_items)(?:/[1-9]\d*)?)(?:\?[^\s#]*)?\z})
+abort "Only relative items, item_blocks, locations and inventory_items API endpoints are supported" unless path.match?(%r{\A/api/(?:items(?:/priorities|/[1-9]\d*)?|(?:locations|inventory_items|item_blocks)(?:/[1-9]\d*)?)(?:\?[^\s#]*)?\z})
 writing = %w[post patch put].include?(method)
 abort usage if writing != (ARGV.length == 3)
 
@@ -42,7 +59,7 @@ request["Accept"] = "application/json"
 # Writes take a JSON file or stdin, avoiding long commands and shell quoting of payloads.
 if writing
   begin
-    payload = ARGV[2] == "-" ? $stdin.read : File.read(ARGV[2])
+    payload = block_payload || (ARGV[2] == "-" ? $stdin.read : File.read(ARGV[2]))
     request.body = JSON.generate(JSON.parse(payload))
     request["Content-Type"] = "application/json"
   rescue JSON::ParserError, Errno::ENOENT, Errno::EACCES
