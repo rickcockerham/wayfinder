@@ -47,6 +47,20 @@ and allows renaming or hiding. Deleting a location requires confirmation, and
 locations containing children or inventory are retained with an explanatory message.
 No sample locations are seeded. These web controls require no new migration.
 
+## Web inventory deletion
+
+The Inventory page's **Destroy** button submits a native Rails DELETE form with
+session CSRF protection and asks "Delete this inventory item?". Cancel retains
+the record; confirm uses the existing owner-scoped destroy action. This does not
+change deletion policy: inventory deletion removes its reservation links under
+the existing `dependent: :destroy` relationship, while tasks, supplier and location
+records remain. Occupied-location deletion restrictions are unchanged.
+
+The form deliberately does not rely on Rails UJS or Turbo to convert a link into
+a DELETE request. No production API deletion route or new permission is added.
+The local regression clicks the actual Inventory-page control using disposable
+stock and a reservation in `test/system/inventory_destroy_test.rb`.
+
 ## Authentication
 
 Morgana calls `https://mywayfinder.app` over HTTP with the existing
